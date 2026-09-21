@@ -1,0 +1,2843 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dienstplan</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='3' width='20' height='19' rx='4' fill='%23c2410c'/%3E%3Cpath d='M2 9h20' stroke='white' stroke-width='2'/%3E%3Cpath d='M7 13h4M7 17h8' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f3f0ea; --card: #fff; --ink: #22201d; --muted: #6f6a62; --line: #e2dcd1; --line2: #eee9df;
+  --accent: #c2410c; --accent-d: #9a3412; --accent-l: #fff1e6;
+  --ok: #157f3b; --ok-l: #e5f5ea; --bad: #b42318; --bad-l: #fde9e7; --warn: #a15c07; --warn-l: #fdf1d8;
+  --top: #2b221b; --r: 10px;
+  --shadow: 0 1px 2px rgba(30, 20, 10, .06), 0 6px 18px rgba(30, 20, 10, .06);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.4; }
+h2, h3, h4 { margin: 0; line-height: 1.25; }
+h3 { font-size: 15px; margin-bottom: 12px; }
+h4 { font-size: 13px; margin: 18px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+small { color: var(--muted); font-weight: 400; font-size: 11.5px; }
+p { margin: 0 0 8px; }
+button, input, select { font: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---- Kopf- und Fußzeile ---- */
+header.top { background: var(--top); color: #f6efe6; display: flex; align-items: center; gap: 22px; padding: 0 20px; min-height: 56px; position: sticky; top: 0; z-index: 30; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; padding: 8px 0; }
+.brand small { color: #f6efe6; opacity: .55; font-weight: 500; font-size: 12px; }
+header nav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+.tab { background: none; border: 0; color: #e8dfd3; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.tab:hover { background: rgba(255, 255, 255, .1); }
+.tab.on { background: var(--accent); color: #fff; }
+#foot { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--line); padding: 6px 20px; font-size: 12px; color: var(--muted); z-index: 20; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 2px; }
+.dot.ok { background: #22a355; } .dot.warn { background: #f59e0b; } .dot.bad { background: #dc2626; }
+.sepdot { margin: 0 6px; opacity: .5; }
+.link { background: none; border: 0; color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0; }
+main { max-width: 1560px; margin: 0 auto; padding: 18px 20px 70px; }
+
+/* ---- Bausteine ---- */
+.card { background: var(--card); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 16px; }
+.two { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
+.two > .card { margin-bottom: 0; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.tools, .weeknav, .monthnav, .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.weeklabel, .monthlabel { font-size: 17px; font-weight: 700; min-width: 210px; text-align: center; }
+.monthlabel { min-width: 150px; }
+.filters label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-weight: 600; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: #fff; border: 1px solid #d5cec1; color: var(--ink); padding: 8px 14px; border-radius: 9px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: #faf7f1; border-color: #c4bcac; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: var(--accent-d); }
+.btn.danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn.danger.ghost { background: #fff; color: var(--bad); border-color: #f0c4bf; }
+.btn.danger.ghost:hover { background: var(--bad-l); }
+.btn.ghost.light { background: transparent; border-color: rgba(255, 255, 255, .25); color: #f6efe6; }
+.btn.ghost.light:hover { background: rgba(255, 255, 255, .1); }
+.btn.icon { padding: 8px 11px; }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+.icon-btn { background: none; border: 0; cursor: pointer; color: var(--muted); padding: 6px 8px; border-radius: 7px; font-size: 14px; }
+.icon-btn:hover { background: #f0ebe1; color: var(--bad); }
+.row-btns { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.muted { color: var(--muted); } .pad { padding: 8px 2px; } .mt { margin-top: 12px; }
+.tip { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
+.note { padding: 9px 12px; border-radius: 8px; background: #f3f0ea; font-size: 13px; }
+.note.warn { background: var(--warn-l); color: var(--warn); }
+.lead { color: var(--muted); }
+
+input[type=text], input[type=number], input[type=date], input[type=time], select {
+  padding: 7px 9px; border: 1px solid #d5cec1; border-radius: 8px; background: #fff; color: var(--ink); min-width: 0; max-width: 100%;
+}
+input:focus, select:focus { outline: 2px solid var(--accent-l); border-color: var(--accent); }
+input[type=color] { width: 38px; height: 34px; padding: 2px; border: 1px solid #d5cec1; border-radius: 8px; background: #fff; cursor: pointer; }
+.fld { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.fld input, .fld select { font-weight: 400; font-size: 14px; }
+.fld small { font-weight: 400; }
+.fld.inline { flex-direction: row; align-items: center; margin-bottom: 10px; }
+.fld.inline label { display: flex; gap: 8px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.grid2 .full { grid-column: 1 / -1; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+.row2 label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; color: var(--muted); font-size: 12.5px; }
+.chks { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.chk { display: flex; align-items: center; gap: 7px; cursor: pointer; font-weight: 500; color: var(--ink); font-size: 14px; }
+.chk.sm { font-size: 13.5px; }
+.chk input { width: 16px; height: 16px; accent-color: var(--accent); }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+details.start { margin: 16px 0 8px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: #fbf9f5; }
+details.start summary { cursor: pointer; font-weight: 600; }
+details.start .grid2 { margin-top: 12px; }
+
+.pdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; flex: none; }
+.ptag { display: inline-block; margin-right: 10px; white-space: nowrap; font-size: 13px; }
+.plus { color: var(--ok); } .minus { color: var(--bad); } .zero { color: var(--muted); }
+.r { text-align: right; } .c { text-align: center; }
+
+/* ---- Modal, Meldungen ---- */
+.modal-back { position: fixed; inset: 0; background: rgba(28, 20, 12, .5); display: grid; place-items: center; z-index: 100; padding: 20px; }
+.modal { background: #fff; border-radius: 14px; width: min(660px, 100%); max-height: calc(100vh - 40px); display: flex; flex-direction: column; box-shadow: 0 24px 70px rgba(0, 0, 0, .35); }
+.modal.wide { width: min(840px, 100%); }
+.modal-form { display: flex; flex-direction: column; min-height: 0; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.modal-head h3 { margin: 0; font-size: 17px; }
+.modal-body { padding: 16px 20px; overflow: auto; }
+.modal-foot { display: flex; gap: 8px; align-items: center; padding: 12px 20px; border-top: 1px solid var(--line); background: #faf8f4; border-radius: 0 0 14px 14px; }
+.modal-foot .sp { flex: 1; }
+.confirm-text { font-size: 15px; margin: 0; }
+.toast { position: fixed; left: 50%; bottom: 54px; transform: translate(-50%, 20px); background: var(--top); color: #fff; padding: 11px 18px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: min(680px, 92vw); z-index: 200; box-shadow: 0 8px 30px rgba(0, 0, 0, .3); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.bad { background: var(--bad); }
+#busy { position: fixed; inset: 0; background: rgba(243, 240, 234, .8); display: grid; place-items: center; z-index: 300; }
+.busy-box { background: #fff; padding: 22px 30px; border-radius: 14px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px; font-weight: 600; }
+.spin { width: 22px; height: 22px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Dienstplan ---- */
+.print-title { display: none; }
+.planwrap { padding: 0; overflow: auto; }
+table.plan { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1040px; table-layout: fixed; }
+.plan th, .plan td { border-bottom: 1px solid var(--line2); border-right: 1px solid var(--line2); }
+.plan thead th { background: #faf7f1; padding: 8px 4px; text-align: center; font-weight: 600; vertical-align: top; }
+.plan th.c-emp { width: 176px; text-align: left; padding: 6px 10px; background: #fff; position: sticky; left: 0; z-index: 2; }
+.plan thead th.c-emp { background: #faf7f1; z-index: 3; }
+.plan th.c-wk, .plan td.wk { width: 112px; }
+.plan .en { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plan .en em { font-weight: 400; color: var(--muted); font-size: 12px; }
+.plan .es { color: var(--muted); font-size: 12px; font-weight: 400; }
+.plan .dh .wd { font-weight: 700; } .plan .dh .dt { color: var(--muted); font-weight: 500; }
+.plan .dh.today { background: var(--accent-l); box-shadow: inset 0 -3px 0 var(--accent); }
+.plan .tag { display: block; font-size: 10.5px; font-weight: 600; margin-top: 2px; line-height: 1.2; }
+.plan .tag.hol { color: var(--bad); } .plan .tag.cls { color: var(--muted); }
+.plan tr.grp td { background: #faf7f1; font-weight: 600; font-size: 12px; padding: 5px 10px; color: var(--muted); border-right: 0; }
+.plan td.cell { height: 60px; padding: 4px; vertical-align: middle; cursor: pointer; position: relative; }
+.plan td.cell:hover { background: #fff8ef; outline: 2px solid var(--accent); outline-offset: -2px; }
+.plan td.cell.today { background: #fffaf5; }
+.plan td.cell.closed { background: repeating-linear-gradient(45deg, #f6f3ee, #f6f3ee 6px, #efebe4 6px, #efebe4 12px); }
+.plan td.cell.empty:hover::after { content: '+'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 24px; color: var(--accent); }
+.plan td.wk { text-align: center; font-size: 13px; padding: 4px; border-right: 0; }
+.plan td.wk small { display: block; font-weight: 700; font-size: 12px; }
+.plan thead th.c-wk small { display: block; font-weight: 400; }
+.chip { border-left: 4px solid var(--pc); background: var(--pb); border-radius: 6px; padding: 3px 7px; margin: 1px 0; position: relative; }
+.chip .t { font-weight: 700; font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip .s { font-size: 11px; color: #5b564e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip.man::after { content: ''; position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.absc { border-radius: 6px; padding: 9px 6px; text-align: center; font-weight: 600; font-size: 12px; }
+.a-urlaub { background: #dbeafe; color: #1e40af; } .a-krank { background: #fee2e2; color: #991b1b; }
+.a-za { background: #e5e7eb; color: #374151; } .a-frei { background: #f3f0ea; color: var(--muted); border: 1px dashed #cfc8ba; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--muted); margin: -4px 4px 16px; align-items: center; }
+.legend b { color: var(--ink); } .legend .sep { opacity: .4; }
+table.cov { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.cov th, .cov td { border-bottom: 1px solid var(--line2); padding: 6px 5px; text-align: center; }
+.cov thead th { color: var(--muted); font-weight: 600; font-size: 12px; }
+.cov tbody th { text-align: left; font-weight: 600; white-space: nowrap; }
+.cov thead th:first-child small { display: block; font-weight: 400; }
+.cov td.na { color: #bbb4a6; }
+.cov tr.tot th, .cov tr.tot td { border-top: 2px solid var(--line); }
+.pill { display: inline-block; padding: 1px 7px; border-radius: 999px; font-weight: 700; font-size: 11px; margin: 1px 2px; white-space: nowrap; }
+.pill.ok { background: var(--ok-l); color: var(--ok); } .pill.bad { background: var(--bad-l); color: var(--bad); }
+ul.hints { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+ul.hints li { display: flex; gap: 8px; padding: 7px 10px; border-radius: 8px; font-size: 13px; }
+ul.hints li span { flex: none; font-weight: 700; }
+ul.hints li.ok { background: var(--ok-l); color: var(--ok); } ul.hints li.bad { background: var(--bad-l); color: var(--bad); } ul.hints li.warn { background: var(--warn-l); color: var(--warn); }
+.welcome { max-width: 720px; margin: 30px auto; padding: 26px 30px; }
+.welcome h2 { font-size: 22px; margin-bottom: 10px; }
+.welcome ol { padding-left: 20px; line-height: 1.7; } .welcome ol li { margin-bottom: 4px; }
+
+/* ---- Tabellen (Mitarbeiter, Einstellungen, Abwesenheiten) ---- */
+.tablewrap { overflow: auto; }
+table.list { width: 100%; border-collapse: collapse; }
+.list th { text-align: left; color: var(--muted); font-size: 12px; font-weight: 600; padding: 7px 10px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+.list th.r { text-align: right; }
+.list td { padding: 9px 10px; border-bottom: 1px solid var(--line2); vertical-align: middle; }
+.list td small { display: block; }
+.list tr.click { cursor: pointer; } .list tr.click:hover td { background: #fff8ef; }
+.list.cfg td { padding: 6px 8px; } .list.cfg td:first-child b { white-space: nowrap; } .list.cfg input[type=text] { width: 100%; min-width: 120px; } .list.cfg input[type=number] { width: 84px; }
+code { background: #f3f0ea; padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
+.alignend { display: flex; align-items: flex-end; }
+.rowhint { font-size: 12px; white-space: nowrap; }
+.abadge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-weight: 600; font-size: 12px; }
+.rowset { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-width: 520px; }
+.rs { display: flex; gap: 8px; align-items: center; } .rs input[type=text] { flex: 1; }
+.reqt th, .reqt td { text-align: center; padding: 6px 4px; } .reqt tbody th { text-align: left; white-space: nowrap; padding-left: 8px; }
+.reqt .off { opacity: .4; }
+.reqt .fs { display: flex; gap: 4px; justify-content: center; }
+.reqt .fs label { display: flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.reqt .fs input { width: 46px; padding: 5px 4px; text-align: center; }
+.settings .card { max-width: 1000px; }
+
+/* ---- Dienst bearbeiten ---- */
+.seg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.segbtn { position: relative; }
+.segbtn input { position: absolute; opacity: 0; inset: 0; }
+.segbtn span { display: inline-block; padding: 7px 12px; border: 1px solid #d5cec1; border-radius: 8px; cursor: pointer; background: #fff; font-weight: 600; }
+.segbtn input:checked + span { background: var(--accent); border-color: var(--accent); color: #fff; }
+.segbtn input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.erow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.erow .dash { color: var(--muted); }
+.erow .pz { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 13px; }
+.erow input[type=number] { width: 64px; }
+
+/* ---- Auswertung ---- */
+.report { display: flex; flex-direction: column; align-items: center; }
+.rpage { background: #fff; border-radius: var(--r); box-shadow: var(--shadow); padding: 16px 20px 20px; margin-bottom: 18px; width: 100%; max-width: 1180px; }
+.rp-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 12px; }
+.rp-head b { color: var(--ink); }
+.rpage h2 { font-size: 18px; margin: 4px 0 14px; }
+.sheets { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+.sh-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.sh-head b { font-size: 15px; } .sh-head span { color: var(--muted); margin-left: 10px; font-size: 12px; } .sh-per { font-weight: 600; color: var(--muted); }
+.sheet table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.sheet th, .sheet td { border: 1px solid #d9d2c4; padding: 2px 6px; white-space: nowrap; }
+.sheet th { background: #f4f0e8; text-align: left; font-size: 11px; }
+.sheet table { table-layout: fixed; }
+.sheet th:nth-child(1) { width: 13%; } .sheet th:nth-child(2), .sheet th:nth-child(3) { width: 13%; } .sheet th:nth-child(4) { width: 10%; } .sheet th:nth-child(5) { width: 12%; }
+.sheet th.r, .sheet td.r { text-align: right; }
+.sheet td.nt { white-space: normal; font-size: 11px; color: #4b463f; }
+.sheet tr.we td { background: #f7f3eb; } .sheet tr.ab td { background: #eef4ff; } .sheet tr.na td { color: #b5aea1; background: #faf8f4; }
+.sheet tr.hd td:first-child { color: var(--bad); font-weight: 700; }
+.sheet tr.sum td { background: #f4f0e8; font-weight: 700; }
+.sum-table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.sum-table th, .sum-table td { border: 1px solid #d9d2c4; padding: 5px 7px; }
+.sum-table thead th { background: #f4f0e8; font-size: 11.5px; text-align: left; vertical-align: bottom; }
+.sum-table thead th.r { text-align: right; } .sum-table thead th.grp { text-align: center; }
+.sum-table td small { display: block; }
+.sum-table td:first-child { white-space: nowrap; }
+.sum-table thead th { white-space: nowrap; }
+.sum-table tfoot td { font-weight: 700; background: #f4f0e8; }
+.exit-h { margin: 22px 0 8px; font-size: 14px; }
+.sum-table.exit td:nth-child(3) { white-space: nowrap; }
+.notes { margin-top: 14px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+
+@media (max-width: 1100px) { .two { grid-template-columns: 1fr; } .sheets { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { header nav { order: 3; flex: 1 0 100%; padding-bottom: 6px; } .brand { padding: 6px 0; } header.top { gap: 4px 16px; } .top-tools { margin-left: auto; } }
+@media (max-width: 720px) { .grid2, .row2 { grid-template-columns: 1fr; } main { padding: 12px 12px 70px; } header.top { padding: 0 12px; gap: 8px; } }
+
+/* ---- Druck (A4 quer) ---- */
+@media print {
+  @page { size: A4 landscape; margin: 9mm; }
+  html, body { background: #fff; font-size: 11px; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  header.top, #foot, .toolbar, .no-print, .tip, #toast, #modal-root, #busy, .legend .sep { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .card { box-shadow: none; padding: 0; margin: 0 0 8mm; border-radius: 0; }
+  .two { display: block; }
+  .print-title { display: block; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .planwrap { overflow: visible; }
+  table.plan { min-width: 0; }
+  .plan td.cell { height: 32px; padding: 2px; }
+  .plan td.cell:hover { outline: none; background: none; }
+  .plan th.c-emp { position: static; padding: 2px 8px; }
+  .plan thead th { padding: 4px 2px; font-size: 10px; }
+  .plan tr.grp td { padding: 2px 8px; font-size: 9.5px; }
+  .plan .en { font-size: 10.5px; } .plan .es { font-size: 8.5px; }
+  .plan td.wk { font-size: 10px; padding: 2px; } .plan td.wk small { font-size: 9px; }
+  .plan .tag { font-size: 8.5px; }
+  .chip { padding: 1px 5px; margin: 0; }
+  .chip .t { font-size: 10px; } .chip .s { font-size: 8px; }
+  .legend { font-size: 9px; margin: 0 0 4mm; }
+  table.cov { font-size: 9.5px; } .cov th, .cov td { padding: 2px 3px; } .pill { font-size: 8.5px; padding: 0 5px; margin: 0 1px; }
+  .card h3 { font-size: 11px; margin-bottom: 3px; }
+  .card { margin-bottom: 4mm; }
+  .report { display: block; }
+  .rpage { box-shadow: none; border-radius: 0; padding: 0; margin: 0; max-width: none; page-break-after: always; break-after: page; }
+  .rpage:last-child { page-break-after: auto; break-after: auto; }
+  .sheets { grid-template-columns: 1fr 1fr !important; gap: 9mm; }
+  .two { display: block !important; }
+  .sheet table { font-size: 8pt; }
+  .sheet th, .sheet td { padding: 0 3px; height: 4.6mm; line-height: 1.15; }
+  .sheet td.nt { font-size: 7pt; }
+  .sh-head { margin-bottom: 3px; } .sh-head b { font-size: 10pt; } .sh-head span { font-size: 8pt; }
+  .rp-head { font-size: 8pt; margin-bottom: 3mm; padding-bottom: 2px; }
+  .rpage h2 { font-size: 13pt; margin: 2mm 0 4mm; }
+  .sum-table { font-size: 8.5pt; } .sum-table th, .sum-table td { padding: 3px 5px; }
+  .notes { font-size: 7.5pt; }
+}
+
+</style>
+</head>
+<body>
+<noscript><p style="padding:20px">Dieses Programm benötigt JavaScript. Bitte JavaScript im Browser aktivieren.</p></noscript>
+<header class="top no-print" id="top"></header>
+<main id="main"></main>
+<footer id="foot" class="no-print"></footer>
+<div id="modal-root"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="busy" hidden><div class="busy-box"><div class="spin"></div><div class="busy-msg">Bitte warten …</div></div></div>
+<script>
+'use strict';
+/* ===== Hilfsfunktionen: Datum, Zeit, Formatierung ===== */
+
+const WD_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const WD_LONG = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+const MONTHS = ['Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+const DAY_MS = 86400000;
+const EMPTY = Object.freeze([]);
+
+const p2 = n => (n < 10 ? '0' : '') + n;
+
+// Tage werden intern als fortlaufende Tagesnummer (dn) geführt, gespeichert als "JJJJ-MM-TT".
+function dnOf(y, m, d) { return Math.round(Date.UTC(y, m - 1, d) / DAY_MS); }
+const isoCache = new Map();
+function fromDn(dn) {
+  let s = isoCache.get(dn);
+  if (!s) {
+    const t = new Date(dn * DAY_MS);
+    s = t.getUTCFullYear() + '-' + p2(t.getUTCMonth() + 1) + '-' + p2(t.getUTCDate());
+    isoCache.set(dn, s);
+  }
+  return s;
+}
+function toDn(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? dnOf(+m[1], +m[2], +m[3]) : NaN;
+}
+function ymd(dn) {
+  const t = new Date(dn * DAY_MS);
+  return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+}
+const wdOf = dn => (((dn + 3) % 7) + 7) % 7; // Montag = 0
+const mondayOf = dn => dn - wdOf(dn);
+function todayDn() {
+  const n = new Date();
+  return dnOf(n.getFullYear(), n.getMonth() + 1, n.getDate());
+}
+const monthStart = (y, m) => dnOf(y, m, 1);
+const monthEnd = (y, m) => dnOf(y, m + 1, 1) - 1;
+function isoWeek(dn) {
+  const thu = dn - wdOf(dn) + 3;
+  const y = ymd(thu).y;
+  return { week: Math.floor((thu - dnOf(y, 1, 1)) / 7) + 1, year: y };
+}
+
+// Formatierung (deutsch)
+function fmtDate(dn) { const t = ymd(dn); return p2(t.d) + '.' + p2(t.m) + '.' + t.y; }
+function fmtDM(dn) { const t = ymd(dn); return p2(t.d) + '.' + p2(t.m) + '.'; }
+function fmtNum(x, dec) {
+  dec = dec === undefined ? 2 : dec;
+  const f = Math.pow(10, dec);
+  return (Math.round((+x || 0) * f) / f).toFixed(dec).replace('.', ',');
+}
+const fmtH = x => fmtNum(x, 2);
+function fmtSigned(x) {
+  const v = Math.round((+x || 0) * 100) / 100;
+  return (v > 0 ? '+' : v < 0 ? '-' : '') + fmtNum(Math.abs(v), 2);
+}
+function fmtDaysExact(x) { // Urlaubstage genau (bis 2 Nachkommastellen, ohne überflüssige Nullen)
+  return String(Math.round((+x || 0) * 100) / 100).replace('.', ',');
+}
+function fmtDays(x) {
+  const v = Math.round((+x || 0) * 10) / 10;
+  return String(v).replace('.', ',');
+}
+
+// Uhrzeiten als "HH:MM" <-> Minuten seit Mitternacht
+function parseHM(s) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s || '');
+  return m ? +m[1] * 60 + +m[2] : NaN;
+}
+function fmtHM(min) {
+  min = ((Math.round(min) % 1440) + 1440) % 1440;
+  return p2(Math.floor(min / 60)) + ':' + p2(min % 60);
+}
+// Dienst von/bis; endet er "vor" dem Beginn, geht er über Mitternacht
+function shiftSpan(start, end) {
+  const s = parseHM(start);
+  let e = parseHM(end);
+  if (e <= s) e += 1440;
+  return { s, e };
+}
+function netHours(start, end, pause) {
+  const { s, e } = shiftSpan(start, end);
+  return Math.max(0, (e - s - (+pause || 0)) / 60);
+}
+
+// Sonstiges
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function uid(prefix) {
+  return (prefix || 'x') + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
+}
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const clone = o => JSON.parse(JSON.stringify(o));
+function tint(hex, a) {
+  const n = parseInt(String(hex).replace('#', ''), 16) || 0;
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ===== Gesetzliche Feiertage Österreich ===== */
+
+// Ostersonntag (Gaußsche Osterformel, gregorianisch)
+function easterDn(y) {
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return dnOf(y, month, day);
+}
+
+const _holCache = new Map();
+function holidaysAT(y) {
+  if (_holCache.has(y)) return _holCache.get(y);
+  const E = easterDn(y);
+  const list = [
+    [dnOf(y, 1, 1), 'Neujahr'],
+    [dnOf(y, 1, 6), 'Heilige Drei Könige'],
+    [E + 1, 'Ostermontag'],
+    [dnOf(y, 5, 1), 'Staatsfeiertag'],
+    [E + 39, 'Christi Himmelfahrt'],
+    [E + 50, 'Pfingstmontag'],
+    [E + 60, 'Fronleichnam'],
+    [dnOf(y, 8, 15), 'Mariä Himmelfahrt'],
+    [dnOf(y, 10, 26), 'Nationalfeiertag'],
+    [dnOf(y, 11, 1), 'Allerheiligen'],
+    [dnOf(y, 12, 8), 'Mariä Empfängnis'],
+    [dnOf(y, 12, 25), 'Christtag'],
+    [dnOf(y, 12, 26), 'Stefanitag'],
+  ].map(([dn, name]) => ({ dn, name })).sort((a, b) => a.dn - b.dn);
+  const map = new Map(list.map(h => [h.dn, h.name]));
+  const res = { list, map };
+  _holCache.set(y, res);
+  return res;
+}
+function holidayName(dn) {
+  return holidaysAT(ymd(dn).y).map.get(dn) || null;
+}
+
+/* ===== Datenmodell, Standardwerte, Zugriffshilfen ===== */
+
+const POS_COLORS = ['#e8590c', '#2f9e44', '#1971c2', '#9c36b5', '#f08c00', '#0c8599', '#c2255c', '#5c7cfa', '#868e96'];
+
+// Vorschlagswerte je Anstellungsart (Wochenstunden, Arbeitstage pro Woche)
+const EMP_TYPES = {
+  'Vollzeit': { weekly: 40, days: 5 },
+  'Teilzeit': { weekly: 25, days: 4 },
+  'Geringfügig': { weekly: 12, days: 2 },
+  'Aushilfe': { weekly: 12, days: 2 },
+  'Lehrling': { weekly: 40, days: 5 },
+};
+const COMPANY_NAME = 'Tiziano Restaurant GmbH';
+const ABS_TYPES = { urlaub: 'Urlaub', krank: 'Krankenstand', za: 'Zeitausgleich', frei: 'Frei (fix)' };
+
+let state = null;   // aktueller Datenbestand
+let stateVer = 0;   // Änderungszähler (für Zwischenspeicher)
+const touch = () => { stateVer++; };
+
+function defaultSettings() {
+  const s = {
+    name: COMPANY_NAME,
+    positions: [
+      { id: 'pos_pizza', name: 'Pizzakoch', color: POS_COLORS[0] },
+      { id: 'pos_kueche', name: 'Küche / Koch', color: POS_COLORS[1] },
+      { id: 'pos_service', name: 'Service', color: POS_COLORS[2] },
+      { id: 'pos_abwasch', name: 'Abwasch / Küchenhilfe', color: POS_COLORS[3] },
+    ],
+    // covers: F = deckt die Früh-Hälfte des Tages ab, S = Spät-Hälfte, FS = beide (durchgehend)
+    shifts: [
+      { id: 'sh_frueh', name: 'Frühdienst', start: '10:00', end: '17:00', pause: 30, covers: 'F' },
+      { id: 'sh_spaet', name: 'Spätdienst', start: '17:00', end: '23:30', pause: 30, covers: 'S' },
+      { id: 'sh_durch', name: 'Durchgehend', start: '11:00', end: '21:00', pause: 60, covers: 'FS' },
+    ],
+    openDays: [false, true, true, true, true, true, true], // Montag = Ruhetag
+    req: {},            // Mindestbesetzung: req[positionId][wochentag] = [früh, spät]
+    minPersons: 4,      // mindestens so viele Personen pro Öffnungstag
+    minRestH: 11,       // Mindestruhezeit zwischen zwei Diensten (Stunden)
+    maxConsec: 6,       // maximal so viele Arbeitstage in Folge
+    fairWeekends: true,
+    closedHolidays: {}, // "JJJJ-MM-TT" -> true: Restaurant an diesem Feiertag geschlossen
+    closures: [],       // Betriebsruhe: { id, from, to, note }
+  };
+  ensureReq(s);
+  return s;
+}
+
+function ensureReq(s) {
+  s.req = s.req || {};
+  for (const p of s.positions) {
+    let r = s.req[p.id];
+    if (!Array.isArray(r) || r.length !== 7) r = s.req[p.id] = [0, 1, 2, 3, 4, 5, 6].map(() => [1, 1]);
+    for (let k = 0; k < 7; k++) {
+      if (!Array.isArray(r[k])) r[k] = [1, 1];
+      r[k][0] = Math.max(0, r[k][0] | 0);
+      r[k][1] = Math.max(0, r[k][1] | 0);
+    }
+  }
+}
+
+function defaultState() {
+  return { v: 1, settings: defaultSettings(), employees: [], absences: [], plan: {} };
+}
+
+// Fehlende Felder ergänzen (ältere Sicherungen, händisch veränderte Dateien)
+function migrate(s) {
+  if (!s || typeof s !== 'object' || !Array.isArray(s.employees) || !s.settings) throw new Error('Ungültige Datei');
+  const d = defaultSettings();
+  s.settings = Object.assign({}, d, s.settings);
+  if (!s.settings.name || s.settings.name === 'Restaurant') s.settings.name = COMPANY_NAME; // früherer Platzhalter
+  if (!Array.isArray(s.settings.positions) || !s.settings.positions.length) s.settings.positions = d.positions;
+  if (!Array.isArray(s.settings.shifts) || !s.settings.shifts.length) s.settings.shifts = d.shifts;
+  if (!Array.isArray(s.settings.openDays) || s.settings.openDays.length !== 7) s.settings.openDays = d.openDays;
+  s.settings.closedHolidays = s.settings.closedHolidays || {};
+  s.settings.closures = s.settings.closures || [];
+  ensureReq(s.settings);
+  s.absences = Array.isArray(s.absences) ? s.absences : [];
+  s.plan = s.plan && typeof s.plan === 'object' ? s.plan : {};
+  const tpl = newEmployee('Vollzeit');
+  s.employees = s.employees.map(e => Object.assign({}, tpl, e, { id: e.id || uid('e') }));
+  s.v = 1;
+  return s;
+}
+
+function newEmployee(type, o) {
+  const t = EMP_TYPES[type] || EMP_TYPES['Vollzeit'];
+  return Object.assign({
+    id: uid('e'), name: '', type: type || 'Vollzeit',
+    weekly: t.weekly, days: t.days, vac: 5 * t.days,
+    vacRest: null,        // Resturlaub (Tage) per Stichtag; null = noch nicht angegeben (dann gilt der volle Anspruch)
+    vacCarry: 0, vacUsedBefore: 0, balStart: 0, trackFrom: fromDn(todayDn()), // trackFrom = erster gezählter Tag = Stichtag + 1
+    main: '', alt: [], allowed: null, offDays: [], from: '', to: '', active: true, note: '',
+  }, o || {});
+}
+
+/* ---------- Zugriff / Zwischenspeicher ---------- */
+
+let _idx = null, _idxVer = -1;
+function getIndex() {
+  if (_idx && _idxVer === stateVer) return _idx;
+  const idx = { emp: new Map(), pos: new Map(), shift: new Map(), abs: new Map(), closures: [], planEmp: new Map() };
+  state.employees.forEach(e => idx.emp.set(e.id, e));
+  state.settings.positions.forEach(p => idx.pos.set(p.id, p));
+  state.settings.shifts.forEach(s => idx.shift.set(s.id, s));
+  // Abwesenheiten je Person und Tag (Krank vor Urlaub vor Zeitausgleich)
+  const prio = { krank: 4, urlaub: 3, za: 2, frei: 1 };
+  for (const a of state.absences) {
+    const f = toDn(a.from), t = toDn(a.to);
+    if (isNaN(f) || isNaN(t)) continue;
+    let m = idx.abs.get(a.emp);
+    if (!m) idx.abs.set(a.emp, (m = new Map()));
+    for (let d = f; d <= t && d - f < 800; d++) {
+      const old = m.get(d);
+      if (!old || prio[a.type] > prio[old]) m.set(d, a.type);
+    }
+  }
+  idx.closures = state.settings.closures
+    .map(c => ({ a: toDn(c.from), b: toDn(c.to), note: c.note || 'Betriebsruhe' }))
+    .filter(c => !isNaN(c.a) && !isNaN(c.b));
+  for (const iso in state.plan) {
+    const dn = toDn(iso);
+    for (const en of state.plan[iso]) {
+      const key = en.emp + '|' + dn;
+      const arr = idx.planEmp.get(key);
+      if (arr) arr.push(en); else idx.planEmp.set(key, [en]);
+    }
+  }
+  _idx = idx; _idxVer = stateVer;
+  return idx;
+}
+const getEmp = id => getIndex().emp.get(id);
+const getPos = id => getIndex().pos.get(id);
+const getShift = id => getIndex().shift.get(id);
+const entriesOf = (empId, dn) => getIndex().planEmp.get(empId + '|' + dn) || EMPTY;
+const entHours = en => netHours(en.start, en.end, en.pause);
+const dayEntries = dn => state.plan[fromDn(dn)] || EMPTY;
+const absenceOf = (empId, dn) => { const m = getIndex().abs.get(empId); return m ? m.get(dn) || null : null; };
+
+// Öffnungsstatus eines Tages
+function dayStatus(dn) {
+  const S = state.settings, wd = wdOf(dn);
+  const holiday = holidayName(dn);
+  const ruhetag = !S.openDays[wd];
+  let closure = null;
+  for (const c of getIndex().closures) if (dn >= c.a && dn <= c.b) { closure = c.note; break; }
+  const closedHoliday = !!(holiday && S.closedHolidays[fromDn(dn)]);
+  const open = !ruhetag && !closure && !closedHoliday;
+  let closedReason = null;
+  if (!open) closedReason = ruhetag ? 'Ruhetag' : closure ? closure : holiday + ' (geschlossen)';
+  return { wd, holiday, ruhetag, closure, closedHoliday, open, closedReason };
+}
+
+/* ---------- Dienste (Einträge im Plan) ---------- */
+
+const covMask = c => (String(c || '').indexOf('F') >= 0 ? 1 : 0) | (String(c || '').indexOf('S') >= 0 ? 2 : 0);
+const covStr = m => (m & 1 ? 'F' : '') + (m & 2 ? 'S' : '');
+// Wird ein eigener Dienst eingetragen, ergibt sich die Abdeckung aus der Uhrzeit (Tagesmitte 17:00)
+function autoCov(start, end) {
+  const { s, e } = shiftSpan(start, end);
+  return covStr((s < 17 * 60 ? 1 : 0) | (e > 17 * 60 ? 2 : 0));
+}
+function makeEntry(empId, posId, sh, manual) {
+  return {
+    id: uid('n'), emp: empId, pos: posId, shift: sh.id || 'custom',
+    start: sh.start, end: sh.end, pause: +sh.pause || 0,
+    cov: sh.covers || autoCov(sh.start, sh.end), manual: !!manual,
+  };
+}
+function addEntry(dn, entry) {
+  const iso = fromDn(dn);
+  (state.plan[iso] = state.plan[iso] || []).push(entry);
+  touch();
+}
+function removeEntriesOf(empId, fromD, toD) {
+  let n = 0;
+  for (let d = fromD; d <= toD; d++) {
+    const iso = fromDn(d), arr = state.plan[iso];
+    if (!arr) continue;
+    const keep = arr.filter(en => en.emp !== empId);
+    n += arr.length - keep.length;
+    if (keep.length) state.plan[iso] = keep; else delete state.plan[iso];
+  }
+  if (n) touch();
+  return n;
+}
+
+// Alle Dienste und Abwesenheiten einer Person nach einem Stichtag entfernen (z. B. nach dem Austritt)
+function removeAfter(empId, dn) {
+  let n = 0;
+  for (const iso in state.plan) {
+    if (toDn(iso) <= dn) continue;
+    const keep = state.plan[iso].filter(en => en.emp !== empId);
+    n += state.plan[iso].length - keep.length;
+    if (keep.length) state.plan[iso] = keep; else delete state.plan[iso];
+  }
+  state.absences = state.absences.flatMap(a => {
+    if (a.emp !== empId || toDn(a.to) <= dn) return [a];
+    if (toDn(a.from) > dn) return [];
+    return [Object.assign({}, a, { to: fromDn(dn) })];
+  });
+  touch();
+  return n;
+}
+
+/* ---------- Abwesenheiten ---------- */
+
+// Benachbarte Abwesenheiten gleicher Art einer Person zusammenfassen
+function mergeAbsences(empId) {
+  const mine = state.absences.filter(a => a.emp === empId).sort((a, b) => toDn(a.from) - toDn(b.from));
+  const merged = [];
+  for (const a of mine) {
+    const last = merged[merged.length - 1];
+    if (last && last.type === a.type && (last.note || '') === (a.note || '') && toDn(a.from) <= toDn(last.to) + 1) {
+      if (toDn(a.to) > toDn(last.to)) last.to = a.to;
+    } else merged.push(Object.assign({}, a));
+  }
+  state.absences = state.absences.filter(a => a.emp !== empId).concat(merged);
+  touch();
+}
+// Für einen einzelnen Tag die Abwesenheit setzen (type = null: Tag frei von Abwesenheit)
+function setAbsenceDay(empId, dn, type) {
+  const out = [];
+  for (const a of state.absences) {
+    const f = toDn(a.from), t = toDn(a.to);
+    if (a.emp !== empId || dn < f || dn > t) { out.push(a); continue; }
+    if (f < dn) out.push(Object.assign({}, a, { id: uid('a'), to: fromDn(dn - 1) }));
+    if (t > dn) out.push(Object.assign({}, a, { id: uid('a'), from: fromDn(dn + 1) }));
+  }
+  state.absences = out;
+  if (type) state.absences.push({ id: uid('a'), emp: empId, from: fromDn(dn), to: fromDn(dn), type, note: '' });
+  mergeAbsences(empId);
+}
+
+/* ---------- Mitarbeiter entfernen ---------- */
+
+// Personen samt Diensten und Abwesenheiten endgültig entfernen
+function deleteEmployees(ids) {
+  const set = new Set(ids);
+  state.employees = state.employees.filter(e => !set.has(e.id));
+  state.absences = state.absences.filter(a => !set.has(a.emp));
+  for (const iso in state.plan) {
+    const keep = state.plan[iso].filter(en => !set.has(en.emp));
+    if (keep.length) state.plan[iso] = keep; else delete state.plan[iso];
+  }
+  touch();
+}
+
+// Frühere Programmversionen enthielten Muster-Mitarbeiter (Beispieldaten). Diese Namen dienen nur dazu,
+// solche Reste in bereits gespeicherten Daten zu erkennen und auf Wunsch zu entfernen.
+const LEGACY_SAMPLE_NAMES = ['Marco Rossi', 'Luca Bianchi', 'Giulia Ferrari', 'Stefan Huber', 'Anna Gruber',
+  'Sabine Wagner', 'Elena Novak', 'Tobias Berger', 'Mehmet Yilmaz', 'Lisa Steiner'];
+function legacySampleEmployees() {
+  const found = state.employees.filter(e => LEGACY_SAMPLE_NAMES.indexOf(e.name) >= 0);
+  return found.length >= 5 ? found : []; // erst ab 5 Treffern, damit einzelne echte Mitarbeiter mit gleichem Namen nicht betroffen sind
+}
+
+/* ===== Stunden- und Urlaubsrechnung =====
+ *
+ * Soll     = Wochenstunden / 7 je Kalendertag (im Zeitraum der Beschäftigung / Zeitkonto-Führung)
+ * gearbeitet = Summe der Dienste (von–bis abzüglich Pause)
+ * Gutschrift = Urlaub, Krankenstand und Feiertag/Betriebsruhe: je Tag Wochenstunden / Arbeitstage pro Woche,
+ *              höchstens so viele Tage pro Woche, bis (gearbeitete Tage + Gutschrifttage) = Arbeitstage pro Woche.
+ * Ist      = gearbeitet + Gutschrift
+ * Saldo    = Ist - Soll   (Plus-/Minusstunden)
+ * Zeitausgleich (ZA) zählt als freier Tag ohne Gutschrift und baut damit Plusstunden ab.
+ */
+
+// Wie zählt ein freier, regulärer Arbeitstag? 'hol' = Feiertag/Betriebsruhe (Stundengutschrift, kein Urlaubsabzug),
+// 'abs' = Abwesenheit (Urlaub, Krank, Zeitausgleich), '' = gewöhnlicher freier Tag.
+// Gesetzliche Feiertage werden nie auf den Urlaub angerechnet; eine Betriebsruhe mit eingetragenem Urlaub schon.
+function offDayKind(st, absType) {
+  const closed = !!(st.closure || st.closedHoliday);
+  if ((st.holiday && (absType || closed)) || (closed && !absType)) return 'hol';
+  return absType ? 'abs' : '';
+}
+
+function empWindow(emp) {
+  const track = emp.trackFrom ? toDn(emp.trackFrom) : NaN;
+  const from = emp.from ? toDn(emp.from) : NaN;
+  const to = emp.to ? toDn(emp.to) : NaN;
+  let a = Math.max(isNaN(track) ? -1e9 : track, isNaN(from) ? -1e9 : from);
+  if (a < -1e8) a = dnOf(ymd(todayDn()).y, 1, 1);
+  return { a, b: isNaN(to) ? 1e9 : to };
+}
+
+// Tagesdatensätze einer Person für a..b (einschließlich). Die Wochenlogik läuft über ganze Kalenderwochen.
+function empDayRecords(emp, a, b) {
+  const S = state.settings, win = empWindow(emp);
+  const abs = getIndex().abs.get(emp.id);
+  const C = Math.max(1, +emp.days || 5);
+  const dayH = (+emp.weekly || 0) / C;
+  const off = emp.offDays || EMPTY;
+  const out = [];
+  for (let ws = mondayOf(a); ws <= b; ws += 7) {
+    const wk = [];
+    let W = 0;
+    for (let k = 0; k < 7; k++) {
+      const dn = ws + k;
+      const inWin = dn >= win.a && dn <= win.b;
+      const r = { dn, inWin, cat: '', work: 0, credit: 0, soll: 0, vac: 0, sick: 0, za: 0, hol: 0, entries: EMPTY, abs: null };
+      if (inWin) {
+        r.soll = (+emp.weekly || 0) / 7;
+        const ens = entriesOf(emp.id, dn);
+        r.entries = ens;
+        if (ens.length) {
+          for (const en of ens) r.work += entHours(en);
+          r.cat = 'work';
+          W++;
+        }
+      }
+      wk.push(r);
+    }
+    // Tage ohne Dienst: freie Tage, Abwesenheiten und Feiertage einordnen
+    const hol = [], ab = [];
+    for (const r of wk) {
+      if (!r.inWin || r.cat === 'work') continue;
+      const wd = wdOf(r.dn);
+      const st = dayStatus(r.dn);
+      const absType = abs ? abs.get(r.dn) || null : null;
+      r.abs = absType;
+      if (!S.openDays[wd] || off.indexOf(wd) >= 0) { r.cat = !S.openDays[wd] ? 'ruhetag' : 'frei'; continue; }
+      if (absType === 'frei') { r.cat = 'frei'; continue; } // fix freigehalten: wie ein normaler freier Tag
+      const kind = offDayKind(st, absType);
+      if (kind === 'hol') hol.push(r);
+      else if (kind === 'abs') ab.push(r);
+      else r.cat = 'frei';
+    }
+    let R = Math.max(0, C - W); // freie Kapazität dieser Woche
+    for (const r of hol) {
+      if (R > 0) { R--; r.cat = 'feiertag'; r.hol = 1; r.credit = dayH; } else r.cat = 'nocredit';
+    }
+    for (const r of ab) {
+      if (R <= 0) { r.cat = 'nocount'; continue; }
+      R--;
+      if (r.abs === 'urlaub') { r.cat = 'urlaub'; r.vac = 1; r.credit = dayH; }
+      else if (r.abs === 'krank') { r.cat = 'krank'; r.sick = 1; r.credit = dayH; }
+      else { r.cat = 'za'; r.za = 1; }
+    }
+    for (const r of wk) if (r.dn >= a && r.dn <= b) out.push(r);
+  }
+  return out;
+}
+
+function sumRecords(recs) {
+  const t = { soll: 0, work: 0, cVac: 0, cSick: 0, cHol: 0, vacDays: 0, sickDays: 0, zaDays: 0, holDays: 0, workDays: 0 };
+  for (const r of recs) {
+    if (!r.inWin) continue;
+    t.soll += r.soll;
+    t.work += r.work;
+    if (r.cat === 'work') t.workDays++;
+    if (r.vac) { t.vacDays++; t.cVac += r.credit; }
+    if (r.sick) { t.sickDays++; t.cSick += r.credit; }
+    if (r.za) t.zaDays++;
+    if (r.hol) { t.holDays++; t.cHol += r.credit; }
+  }
+  t.credit = t.cVac + t.cSick + t.cHol;
+  t.ist = t.work + t.credit;
+  t.saldo = t.ist - t.soll;
+  return t;
+}
+const empTotals = (emp, a, b) => sumRecords(empDayRecords(emp, a, b));
+
+// Zeitkonto: Startsaldo + alle Monate seit Beginn der Zeitkonto-Führung bis upTo
+function empAccount(emp, upTo) {
+  const win = empWindow(emp);
+  const start = +emp.balStart || 0;
+  if (win.a > upTo) return { saldo: 0, konto: start };
+  const t = empTotals(emp, win.a, Math.min(upTo, win.b));
+  return { saldo: t.saldo, konto: start + t.saldo };
+}
+
+/* ---------- Urlaub ----------
+ * Urlaubsjahr = ab dem Jahrestag des Eintritts (ohne Eintrittsdatum: Kalenderjahr). Am Jahrestag wird der Jahresanspruch
+ * neu gutgeschrieben, ein nicht verbrauchter Rest wird übertragen. Im Urlaubsjahr des Austritts gilt der Anspruch
+ * aliquot (Tage des Arbeitsverhältnisses im Urlaubsjahr / Tage des Urlaubsjahres).
+ */
+const daysInMonth = (y, m) => monthEnd(y, m) - monthStart(y, m) + 1;
+function vacAnchor(emp) { // [Monat, Tag] des Eintritts
+  const f = emp.from ? toDn(emp.from) : NaN;
+  if (isNaN(f)) return [1, 1];
+  const t = ymd(f);
+  return [t.m, t.d];
+}
+function anniversary(emp, y) { // Jahrestag im Jahr y (29.2. -> 28.2. in Nicht-Schaltjahren)
+  const [m, d] = vacAnchor(emp);
+  return dnOf(y, m, Math.min(d, daysInMonth(y, m)));
+}
+function vacYearStart(emp, dn) {
+  const s = anniversary(emp, ymd(dn).y);
+  return s <= dn ? s : anniversary(emp, ymd(dn).y - 1);
+}
+const vacYearEnd = (emp, start) => anniversary(emp, ymd(start).y + 1) - 1;
+
+// Resturlaub per Stichtag (der Stichtag ist der Tag vor trackFrom, die Werte gelten zum Ende dieses Tages).
+// Ältere Daten ohne vacRest verwenden weiter Vorjahresrest und bereits genommenen Urlaub.
+const hasVacRest = emp => emp.vacRest != null && emp.vacRest !== '' && !isNaN(+emp.vacRest);
+function vacRestOf(emp) { // Resturlaub per Stichtag, auch für ältere Daten
+  return hasVacRest(emp) ? +emp.vacRest : (+emp.vacCarry || 0) + (+emp.vac || 0) - (+emp.vacUsedBefore || 0);
+}
+// Zerlegt den Stand in "Übertrag ins erste Urlaubsjahr" und "davon schon genommen"
+function vacStartParts(emp, ys0) {
+  if (!hasVacRest(emp)) return { carry: +emp.vacCarry || 0, before: +emp.vacUsedBefore || 0 };
+  const R = +emp.vacRest, ent = +emp.vac || 0;
+  const track = emp.trackFrom ? toDn(emp.trackFrom) : NaN, from = emp.from ? toDn(emp.from) : NaN;
+  if (!isNaN(track) && !isNaN(from) && track - 1 < from) return { carry: 0, before: 0 }; // Stand vor dem Eintritt: nichts zu übernehmen
+  if (!isNaN(track) && vacYearStart(emp, track - 1) < ys0) return { carry: R, before: 0 }; // Stand am Ende des Vorjahres: Übertrag
+  return R <= ent ? { carry: 0, before: ent - R } : { carry: R - ent, before: 0 };
+}
+
+// Urlaubsstand zum Tag upTo: Anspruch + Übertrag - genommen im Urlaubsjahr, das upTo enthält.
+// Liegt upTo auf oder nach dem Austritt, wird aliquot bis zum Austritt abgerechnet (final = true).
+function vacationInfo(emp, upTo) {
+  const win = empWindow(emp);
+  const ref = Math.min(upTo, win.b);
+  if (ref < win.a) return null;
+  const final = win.b < 1e8 && upTo >= win.b;
+  let ys = vacYearStart(emp, win.a);
+  const ys0 = ys, parts = vacStartParts(emp, ys0);
+  let carry = parts.carry;
+  for (let guard = 0; guard < 80; guard++) {
+    const ye = vacYearEnd(emp, ys), before = ys === ys0 ? parts.before : 0;
+    if (ref <= ye) return vacYear(emp, ys, ye, carry, upTo, before, final);
+    carry = vacYear(emp, ys, ye, carry, ye, before, false).rest;
+    ys = ye + 1;
+  }
+  return null;
+}
+function vacYear(emp, ys, ye, carry, upTo, before, final) {
+  const win = empWindow(emp);
+  const a = Math.max(ys, win.a), b = Math.min(ye, win.b);
+  let usedProg = 0, later = 0;
+  if (a <= b) {
+    for (const r of empDayRecords(emp, a, b)) if (r.vac) { if (r.dn <= upTo) usedProg++; else later++; }
+  }
+  const full = +emp.vac || 0, daysInYear = ye - ys + 1, endDay = Math.min(ye, win.b);
+  const daysWorked = endDay - ys + 1;
+  const entitlement = final ? full * daysWorked / daysInYear : full;
+  const used = before + usedProg;
+  const rest = carry + entitlement - used;
+  return { yStart: ys, yEnd: ye, entitlement, fullEntitlement: full, carry, used, before, usedProg, later, rest, restAfterPlanned: rest - later, final, daysWorked, daysInYear, endDay };
+}
+// Abrechnung, falls der Mitarbeiter am Tag `exit` ausscheidet (auch als Vorschau vor dem Speichern)
+function vacationSettlement(emp, exit) {
+  return vacationInfo(Object.assign({}, emp, { to: fromDn(exit) }), exit);
+}
+
+// Lücke zwischen Stichtag und heute: Soll-Stunden ohne eingetragene Dienste ergeben Minusstunden.
+// stand = Stichtag (dn); gerechnet wird von stand+1 bis gestern. Liefert null, wenn es keine Lücke gibt.
+function standGap(emp, stand, today) {
+  const a = stand + 1, b = today - 1;
+  if (isNaN(stand) || a > b) return null;
+  const temp = Object.assign({}, emp, { trackFrom: fromDn(a), active: true });
+  const t = empTotals(temp, a, b);
+  return { days: b - a + 1, soll: t.soll, ist: t.ist, saldo: t.saldo };
+}
+
+/* ===== Automatische Dienstplanung =====
+ *
+ * Eine Woche wird als Optimierungsproblem gelöst (Simulated Annealing):
+ *  - jede Person hat pro Tag genau einen Dienst (Früh / Spät / Durchgehend ...) mit einer Position oder frei
+ *  - hart bewertet: Mindestbesetzung je Position und Tageshälfte, Mindestanzahl Personen, Ruhezeit, Arbeitstage in Folge,
+ *    Abwesenheiten, feste freie Tage, Positionen und erlaubte Dienste
+ *  - weich bewertet: Wochenstunden (inkl. Urlaub/Krank-Gutschrift und bisherigem Zeitkonto), gleichmäßige Verteilung,
+ *    zusammenhängende freie Tage, möglichst gleiche Dienstart, Hauptposition, faire Wochenenden
+ * Manuell geänderte Dienste bleiben auf Wunsch unverändert; Tage außerhalb des Planungszeitraums werden nicht angefasst.
+ */
+
+const PW = { MISS: 1000, MINP: 900, REST: 400, CONSEC: 300, DAYS: 120, OVER: 11, UNDER: 8, LOST: 40, SPREAD: 0.35, OFFBLK: 1.5, KIND: 0.8, POSCHG: 0.5, ALT: 1.5, WKND: 0.8 };
+
+function dayBounds(empId, dn) {
+  const ens = entriesOf(empId, dn);
+  if (!ens.length) return null;
+  let s = Infinity, e = -Infinity;
+  for (const x of ens) {
+    const sp = shiftSpan(x.start, x.end);
+    if (sp.s < s) s = sp.s;
+    if (sp.e > e) e = sp.e;
+  }
+  return { s, e };
+}
+
+// Plant eine Kalenderwoche (ws = Montag). opt: { from, to, keepManual, seed, iters, restarts }
+function planWeek(ws, opt) {
+  opt = opt || {};
+  const S = state.settings, idx = getIndex();
+  const rnd = mulberry32(opt.seed != null ? opt.seed : (Math.random() * 4294967296) >>> 0);
+  const keepManual = opt.keepManual !== false;
+  const rangeA = opt.from != null ? opt.from : ws, rangeB = opt.to != null ? opt.to : ws + 6;
+  const P = S.positions, nP = P.length;
+  const posIndex = new Map(P.map((p, i) => [p.id, i]));
+  const shIndex = new Map(S.shifts.map((s, i) => [s.id, i]));
+  const shifts = S.shifts.filter(s => netHours(s.start, s.end, s.pause) > 0);
+  const minRest = (+S.minRestH || 0) * 60, maxConsec = +S.maxConsec || 7;
+
+  const OFF = { off: true, st: 0, en: 0, hrs: 0, cov: 0, parts: EMPTY, shIdx: -1, pos: -1, isMain: true };
+  const makeOpt = (sh, posId, isMain) => {
+    const { s, e } = shiftSpan(sh.start, sh.end);
+    const cov = covMask(sh.covers), pos = posIndex.get(posId);
+    return { off: false, sh, shIdx: shIndex.get(sh.id), pos, st: s, en: e, hrs: (e - s - (+sh.pause || 0)) / 60, cov, isMain, parts: [{ pos, cov }] };
+  };
+  const fixedOpt = entries => {
+    let st = Infinity, en = -Infinity, hrs = 0, cov = 0;
+    const parts = [];
+    for (const x of entries) {
+      const sp = shiftSpan(x.start, x.end), c = covMask(x.cov);
+      st = Math.min(st, sp.s); en = Math.max(en, sp.e); hrs += (sp.e - sp.s - (+x.pause || 0)) / 60; cov |= c;
+      parts.push({ pos: posIndex.has(x.pos) ? posIndex.get(x.pos) : -1, cov: c });
+    }
+    return { off: false, fixed: true, st, en, hrs, cov, parts, shIdx: -2, pos: parts[0].pos, isMain: true };
+  };
+
+  /* ---- Tage ---- */
+  const days = [];
+  for (let k = 0; k < 7; k++) {
+    const dn = ws + k, st = dayStatus(dn);
+    const req = P.map(p => { const r = (S.req[p.id] || [])[k] || [0, 0]; return st.open ? [r[0] | 0, r[1] | 0] : [0, 0]; });
+    let tot = 0;
+    req.forEach(r => { tot += r[0] + r[1]; });
+    days.push({ dn, k, st, open: st.open && dn >= rangeA && dn <= rangeB, req, tot });
+  }
+  const openDays = days.filter(d => d.st.open);
+  const avgTot = openDays.length ? openDays.reduce((s, d) => s + d.tot, 0) / openDays.length : 1;
+  days.forEach(d => { d.w = Math.max(0.5, d.tot / Math.max(1, avgTot)); });
+
+  /* ---- Personen ---- */
+  const emps = state.employees.filter(e => {
+    if (e.active === false || !e.main || !posIndex.has(e.main)) return false;
+    const f = e.from ? toDn(e.from) : -1e9, t = e.to ? toDn(e.to) : 1e9;
+    return f <= ws + 6 && t >= ws;
+  });
+  const empIds = new Set(emps.map(e => e.id));
+  const nE = emps.length;
+  let prevPlanned = false;
+  for (let dn = ws - 7; dn < ws; dn++) if (dayEntries(dn).length) prevPlanned = true;
+
+  const E = emps.map(e => {
+    const eFrom = e.from ? toDn(e.from) : -1e9, eTo = e.to ? toDn(e.to) : 1e9;
+    const C = Math.max(1, +e.days || 5), weekly = +e.weekly || 0, dayH = weekly / C;
+    const off = e.offDays || EMPTY;
+    const absMap = idx.abs.get(e.id);
+    const win = empWindow(e);
+    const avail = [], forced = [], tracked = [];
+    let empDays = 0, candCredit = 0, candZa = 0;
+    for (let k = 0; k < 7; k++) {
+      const dn = ws + k, d = days[k];
+      const employed = dn >= eFrom && dn <= eTo;
+      const absType = absMap ? absMap.get(dn) || null : null;
+      const isTracked = employed && dn >= win.a && dn <= win.b; // zählt für Soll
+      tracked.push(isTracked);
+      if (isTracked) empDays++;
+      const regular = isTracked && S.openDays[k] && off.indexOf(k) < 0;
+      if (regular && absType !== 'frei') {
+        const kind = offDayKind(d.st, absType);
+        if (kind === 'hol') candCredit++;
+        else if (kind === 'abs') { if (absType === 'za') candZa++; else candCredit++; }
+      }
+      avail.push(d.st.open && employed && !absType && off.indexOf(k) < 0);
+      forced.push(!avail[k]);
+    }
+    // Über-/Unterstunden der letzten 4 Wochen werden zur Hälfte in dieser Woche ausgeglichen
+    // (nur wenn davor überhaupt geplant wurde, sonst würden Lücken im Plan als Minusstunden gelten)
+    let carry = 0;
+    if (prevPlanned && ws - 1 >= win.a) carry = clamp(empTotals(e, Math.max(win.a, ws - 28), ws - 1).saldo, -6, 6) * 0.5;
+    const T = Math.max(0, weekly * empDays / 7 - dayH * candZa - carry);
+    // Auswahl an möglichen Diensten
+    const posList = [e.main].concat((e.alt || []).filter(x => x !== e.main)).filter(id => posIndex.has(id));
+    const allowed = e.allowed && e.allowed.length ? shifts.filter(s => e.allowed.indexOf(s.id) >= 0) : shifts;
+    const opts = [], optBy = new Map();
+    for (const sh of allowed) for (const pid of posList) {
+      const o = makeOpt(sh, pid, pid === e.main);
+      opts.push(o);
+      optBy.set(o.shIdx * 64 + o.pos, o);
+    }
+    // Umfeld: Tage vor und nach der Woche
+    let run = 0;
+    for (let dn = ws - 1; dn >= ws - 14 && entriesOf(e.id, dn).length; dn--) run++;
+    const pb = dayBounds(e.id, ws - 1), nb = dayBounds(e.id, ws + 7);
+    let wkPrior = 0;
+    for (let dn = ws - 28; dn < ws; dn++) if (wdOf(dn) >= 5) wkPrior += entriesOf(e.id, dn).length ? 1 : 0;
+    return { emp: e, C, dayH, T, target: T, tracked, candCredit, avail, forced, opts, optBy, run, prevEnd: pb ? pb.e : null, nextStart: nb ? nb.s : null, wkPrior, wkDelta: 0 };
+  });
+  if (S.fairWeekends !== false && nE) {
+    const mean = E.reduce((s, e) => s + e.wkPrior, 0) / nE;
+    E.forEach(e => { e.wkDelta = e.wkPrior - mean; });
+  }
+
+  /* ---- feste Zellen (außerhalb des Zeitraums / manuell) und Hintergrund ---- */
+  const fixed = E.map(() => new Array(7).fill(null));
+  E.forEach((e, ei) => {
+    for (let k = 0; k < 7; k++) {
+      const dn = ws + k, existing = entriesOf(e.emp.id, dn);
+      const inRange = dn >= rangeA && dn <= rangeB;
+      const keep = !inRange ? existing : keepManual ? existing.filter(x => x.manual) : EMPTY;
+      if (keep.length) fixed[ei][k] = fixedOpt(keep);
+      else if (!inRange) fixed[ei][k] = OFF;
+    }
+  });
+  // Angebrochene Wochen (z. B. am Monatsende): bereits Eingetragenes zählt mit, der Rest wird nach Kalendertagen
+  // (wie das Soll) auf die jetzt und die später noch zu planenden Tage verteilt
+  E.forEach((e, ei) => {
+    let hOut = 0, hFixIn = 0, calIn = 0, calAfter = 0;
+    for (let k = 0; k < 7; k++) {
+      const dn = ws + k, inRange = dn >= rangeA && dn <= rangeB, f = fixed[ei][k], has = !!(f && !f.off);
+      if (has) { if (inRange) hFixIn += f.hrs; else hOut += f.hrs; }
+      if (!e.tracked[k]) continue;
+      if (inRange) calIn++;
+      else if (dn > rangeB && !has && e.avail[k]) calAfter++;
+    }
+    const R = Math.max(0, e.T - hOut - hFixIn);
+    e.target = Math.max(0, e.T - (calIn + calAfter > 0 ? R * calAfter / (calIn + calAfter) : 0));
+  });
+  const bgCnt = days.map(() => new Int32Array(nP * 2)), bgHead = days.map(() => 0);
+  days.forEach(d => {
+    const seen = new Set();
+    for (const x of dayEntries(d.dn)) {
+      if (empIds.has(x.emp)) continue;
+      seen.add(x.emp);
+      const c = covMask(x.cov), p = posIndex.get(x.pos);
+      if (p === undefined) continue;
+      if (c & 1) bgCnt[d.k][p * 2]++;
+      if (c & 2) bgCnt[d.k][p * 2 + 1]++;
+    }
+    bgHead[d.k] = seen.size;
+  });
+
+  /* ---- freie Zellen ---- */
+  const freeCells = [], freeDaysOf = E.map(() => []), freeEmpsOfDay = days.map(() => []);
+  E.forEach((e, ei) => {
+    if (!e.opts.length) return;
+    for (let k = 0; k < 7; k++) {
+      if (fixed[ei][k] || e.forced[k]) continue;
+      freeCells.push(ei * 7 + k); freeDaysOf[ei].push(k); freeEmpsOfDay[k].push(ei);
+    }
+  });
+
+  const cur = E.map((e, ei) => fixed[ei].map(f => f || OFF));
+  const cnt = new Int32Array(nP * 2);
+  const wkStress = S.fairWeekends !== false;
+
+  function dayCost(k) {
+    const d = days[k];
+    if (!d.open) return 0;
+    cnt.fill(0);
+    let head = bgHead[k];
+    for (let i = 0; i < nE; i++) {
+      const o = cur[i][k];
+      if (o.off) continue;
+      head++;
+      const parts = o.parts;
+      for (let q = 0; q < parts.length; q++) {
+        const pt = parts[q];
+        if (pt.pos < 0) continue;
+        if (pt.cov & 1) cnt[pt.pos * 2]++;
+        if (pt.cov & 2) cnt[pt.pos * 2 + 1]++;
+      }
+    }
+    let c = 0;
+    const bg = bgCnt[k];
+    for (let p = 0; p < nP; p++) for (let s = 0; s < 2; s++) {
+      const have = cnt[p * 2 + s] + bg[p * 2 + s], need = d.req[p][s];
+      if (have < need) c += PW.MISS * (need - have);
+    }
+    if (head < S.minPersons) c += PW.MINP * (S.minPersons - head);
+    const hw = head / d.w;
+    return c + PW.SPREAD * hw * hw;
+  }
+
+  function rowCost(ei) {
+    const e = E[ei], row = cur[ei];
+    let hrs = 0, W = 0, cost = 0, run = e.run, prev = null, prevEnd = e.prevEnd, blocks = 0, wasOff = false;
+    for (let k = 0; k < 7; k++) {
+      const o = row[k];
+      if (o.off) {
+        if (!wasOff) blocks++;
+        wasOff = true; run = 0; prev = null; prevEnd = null;
+        continue;
+      }
+      wasOff = false;
+      W++; hrs += o.hrs;
+      if (prevEnd !== null && 1440 + o.st - prevEnd < minRest) cost += PW.REST;
+      run++;
+      if (run > maxConsec) cost += PW.CONSEC;
+      if (prev) {
+        if (prev.shIdx !== o.shIdx) cost += PW.KIND;
+        if (prev.pos !== o.pos) cost += PW.POSCHG;
+      }
+      if (!o.isMain) cost += PW.ALT;
+      if (wkStress && k >= 5) cost += PW.WKND * e.wkDelta;
+      prev = o; prevEnd = o.en;
+    }
+    if (prevEnd !== null && e.nextStart !== null && 1440 + e.nextStart - prevEnd < minRest) cost += PW.REST;
+    const credited = Math.min(e.candCredit, Math.max(0, e.C - W));
+    const dev = hrs + credited * e.dayH - e.target;
+    cost += dev > 0 ? PW.OVER * dev : -PW.UNDER * dev;
+    cost += PW.LOST * (e.candCredit - credited);
+    if (W > e.C) cost += PW.DAYS * (W - e.C);
+    if (blocks > 1) cost += PW.OFFBLK * (blocks - 1);
+    return cost;
+  }
+
+  const rowC = new Array(nE), dayC = new Array(7);
+  const cellCost = () => {
+    let t = 0;
+    for (let i = 0; i < nE; i++) t += (rowC[i] = rowCost(i));
+    for (let k = 0; k < 7; k++) t += (dayC[k] = dayCost(k));
+    return t;
+  };
+
+  let bestSol = null, bestTot = Infinity;
+  if (freeCells.length) {
+    const iters = opt.iters || Math.max(30000, freeCells.length * 1000);
+    const restarts = opt.restarts || 3;
+    const T0 = 25, T1 = 0.12, cool = Math.pow(T1 / T0, 1 / iters);
+    for (let rs = 0; rs < restarts; rs++) {
+      for (let i = 0; i < nE; i++) for (let k = 0; k < 7; k++) cur[i][k] = fixed[i][k] || OFF;
+      let total = cellCost(), T = T0;
+      for (let it = 0; it < iters; it++, T *= cool) {
+        const r = rnd();
+        if (r < 0.55) {
+          // Zelle ändern
+          const c = freeCells[(rnd() * freeCells.length) | 0], ei = (c / 7) | 0, k = c % 7;
+          const e = E[ei], old = cur[ei][k];
+          const nw = rnd() < 0.3 ? OFF : e.opts[(rnd() * e.opts.length) | 0];
+          if (nw === old) continue;
+          const oR = rowC[ei], oD = dayC[k];
+          cur[ei][k] = nw;
+          const nR = rowCost(ei), nD = dayCost(k), delta = nR + nD - oR - oD;
+          if (delta <= 0 || rnd() < Math.exp(-delta / T)) { rowC[ei] = nR; dayC[k] = nD; total += delta; }
+          else cur[ei][k] = old;
+        } else if (r < 0.8) {
+          // zwei Tage einer Person tauschen
+          const c = freeCells[(rnd() * freeCells.length) | 0], ei = (c / 7) | 0, k1 = c % 7;
+          const fd = freeDaysOf[ei], k2 = fd[(rnd() * fd.length) | 0];
+          if (k1 === k2 || cur[ei][k1] === cur[ei][k2]) continue;
+          const a = cur[ei][k1], b = cur[ei][k2];
+          const oR = rowC[ei], oD1 = dayC[k1], oD2 = dayC[k2];
+          cur[ei][k1] = b; cur[ei][k2] = a;
+          const nR = rowCost(ei), nD1 = dayCost(k1), nD2 = dayCost(k2), delta = nR + nD1 + nD2 - oR - oD1 - oD2;
+          if (delta <= 0 || rnd() < Math.exp(-delta / T)) { rowC[ei] = nR; dayC[k1] = nD1; dayC[k2] = nD2; total += delta; }
+          else { cur[ei][k1] = a; cur[ei][k2] = b; }
+        } else {
+          // Dienste zweier Personen an einem Tag tauschen
+          const c = freeCells[(rnd() * freeCells.length) | 0], e1 = (c / 7) | 0, k = c % 7;
+          const fe = freeEmpsOfDay[k], e2 = fe[(rnd() * fe.length) | 0];
+          if (e1 === e2) continue;
+          const a = cur[e1][k], b = cur[e2][k];
+          if (a === b) continue;
+          const na = b.off ? OFF : E[e1].optBy.get(b.shIdx * 64 + b.pos);
+          const nb = a.off ? OFF : E[e2].optBy.get(a.shIdx * 64 + a.pos);
+          if (!na || !nb) continue;
+          const o1 = rowC[e1], o2 = rowC[e2], oD = dayC[k];
+          cur[e1][k] = na; cur[e2][k] = nb;
+          const n1 = rowCost(e1), n2 = rowCost(e2), nD = dayCost(k), delta = n1 + n2 + nD - o1 - o2 - oD;
+          if (delta <= 0 || rnd() < Math.exp(-delta / T)) { rowC[e1] = n1; rowC[e2] = n2; dayC[k] = nD; total += delta; }
+          else { cur[e1][k] = a; cur[e2][k] = b; }
+        }
+      }
+      // Feinschliff: Einzelverbesserungen, bis nichts mehr besser wird
+      for (let pass = 0, improved = true; improved && pass < 6; pass++) {
+        improved = false;
+        for (const c of freeCells) {
+          const ei = (c / 7) | 0, k = c % 7, e = E[ei], old = cur[ei][k];
+          let bestO = old, bestD = 0;
+          const oR = rowC[ei], oD = dayC[k];
+          let bR = oR, bD = oD;
+          for (let j = -1; j < e.opts.length; j++) {
+            const o = j < 0 ? OFF : e.opts[j];
+            if (o === old) continue;
+            cur[ei][k] = o;
+            const nR = rowCost(ei), nD = dayCost(k), delta = nR + nD - oR - oD;
+            if (delta < bestD - 1e-9) { bestD = delta; bestO = o; bR = nR; bD = nD; }
+          }
+          cur[ei][k] = bestO;
+          if (bestO !== old) { rowC[ei] = bR; dayC[k] = bD; total += bestD; improved = true; }
+        }
+      }
+      if (total < bestTot - 1e-9) { bestTot = total; bestSol = cur.map(row => row.slice()); }
+    }
+  }
+
+  /* ---- Ergebnis übernehmen ---- */
+  for (let k = 0; k < 7; k++) {
+    const dn = ws + k;
+    if (dn < rangeA || dn > rangeB) continue;
+    const iso = fromDn(dn);
+    let arr = (state.plan[iso] || []).filter(en => !(empIds.has(en.emp) && !(keepManual && en.manual)));
+    if (bestSol) {
+      E.forEach((e, ei) => {
+        const o = bestSol[ei][k];
+        if (o.off || o.fixed) return;
+        arr.push({ id: uid('n'), emp: e.emp.id, pos: P[o.pos].id, shift: o.sh.id, start: o.sh.start, end: o.sh.end, pause: +o.sh.pause || 0, cov: o.sh.covers, manual: false });
+      });
+    }
+    if (arr.length) state.plan[iso] = arr; else delete state.plan[iso];
+  }
+  touch();
+  return { cost: bestTot, employees: nE };
+}
+
+// Alle Wochen (Montage), die den Zeitraum a..b berühren
+function weeksOf(a, b) {
+  const out = [];
+  for (let ws = mondayOf(a); ws <= b; ws += 7) out.push(ws);
+  return out;
+}
+
+/* ===== Prüfung einer Woche (auch für manuell bearbeitete Pläne) ===== */
+
+function checkWeek(ws) {
+  const S = state.settings, out = [];
+  const minRest = (+S.minRestH || 0) * 60, maxConsec = +S.maxConsec || 7;
+  for (let k = 0; k < 7; k++) {
+    const dn = ws + k, st = dayStatus(dn);
+    if (!st.open) continue;
+    const ens = dayEntries(dn);
+    for (const p of S.positions) {
+      const req = (S.req[p.id] || [])[k] || [0, 0];
+      for (let s = 0; s < 2; s++) {
+        const have = ens.filter(en => en.pos === p.id && (covMask(en.cov) & (1 << s))).length;
+        if (have < req[s]) out.push({ type: 'cover', dn, pos: p.id, slot: s ? 'S' : 'F', need: req[s], have });
+      }
+    }
+    const heads = new Set(ens.map(en => en.emp)).size;
+    if (heads < S.minPersons) out.push({ type: 'minp', dn, have: heads, need: S.minPersons });
+  }
+  for (const e of state.employees) {
+    let any = false;
+    for (let k = -1; k < 7; k++) if (entriesOf(e.id, ws + k).length) any = true;
+    if (!any && e.active === false) continue;
+    // Ruhezeit und Arbeitstage in Folge
+    let run = 0;
+    for (let dn = ws - 14; dn <= ws + 6; dn++) if (dn >= ws - 14) {
+      const b = dayBounds(e.id, dn);
+      if (!b) { run = 0; continue; }
+      run++;
+      if (dn >= ws && run > maxConsec) out.push({ type: 'consec', emp: e.id, dn, run });
+      const pb = dayBounds(e.id, dn - 1);
+      if (dn >= ws && pb && 1440 + b.s - pb.e < minRest) out.push({ type: 'rest', emp: e.id, dn, rest: (1440 + b.s - pb.e) / 60 });
+    }
+    // Einträge an Abwesenheitstagen
+    for (let k = 0; k < 7; k++) {
+      const a = absenceOf(e.id, ws + k);
+      if (a && (a === 'urlaub' || a === 'krank') && entriesOf(e.id, ws + k).length) out.push({ type: 'conflict', emp: e.id, dn: ws + k, abs: a });
+    }
+    // Wochenstunden
+    if (e.active !== false && +e.weekly > 0) {
+      const t = empTotals(e, ws, ws + 6);
+      if (t.soll > 0 && Math.abs(t.saldo) >= 2) out.push({ type: 'hours', emp: e.id, saldo: t.saldo, ist: t.ist, soll: t.soll });
+    }
+  }
+  return out;
+}
+
+function describeIssue(x) {
+  const emp = x.emp ? (getEmp(x.emp) || {}).name : '';
+  const day = x.dn != null ? WD_SHORT[wdOf(x.dn)] + ' ' + fmtDM(x.dn) : '';
+  switch (x.type) {
+    case 'cover': { const p = getPos(x.pos); return day + ': ' + (p ? p.name : '?') + ' ' + (x.slot === 'F' ? 'früh' : 'spät') + ' nicht ausreichend besetzt (' + x.have + ' von ' + x.need + ')'; }
+    case 'minp': return day + ': nur ' + x.have + ' Person' + (x.have === 1 ? '' : 'en') + ' eingeteilt (mindestens ' + x.need + ')';
+    case 'rest': return day + ': ' + emp + ' hat nur ' + fmtNum(x.rest, 1) + ' Std. Ruhezeit vor dem Dienst';
+    case 'consec': return day + ': ' + emp + ' arbeitet den ' + x.run + '. Tag in Folge';
+    case 'conflict': return day + ': ' + emp + ' ist eingeteilt, hat aber ' + (x.abs === 'krank' ? 'Krankenstand' : 'Urlaub');
+    case 'hours': return emp + ': Woche ' + fmtSigned(x.saldo) + ' Std. (Ist ' + fmtH(x.ist) + ' / Soll ' + fmtH(x.soll) + ')';
+  }
+  return '';
+}
+
+/* ===== Speichern, Rückgängig, Sicherung =====
+ * Arbeitskopie: localStorage des Browsers (schneller Start, geht in jedem Browser).
+ * Zusätzlich (Chrome/Edge): ein Datenordner auf dem Computer. Dort liegt die Datei "Dienstplan-Daten.json" und im
+ * Unterordner "Sicherungen" je Arbeitstag eine Kopie (die letzten 30). Der Ordner ist die maßgebliche Fassung:
+ * beim Start werden neuere Daten aus dem Ordner übernommen. Jeder Stand trägt einen Zeitstempel (savedAt).
+ * Abweichungen werden erkannt und nie stillschweigend überschrieben; die jeweils ersetzte Fassung wird aufgehoben.
+ */
+
+const STORE_KEY = 'dienstplan.daten.v1';
+const META_KEY = 'dienstplan.meta.v1';
+const DATA_FILE = 'Dienstplan-Daten.json';
+const BACKUP_DIR = 'Sicherungen';
+const KEEP_BACKUPS = 30;
+let meta = { lastBackup: 0, fsLastWritten: 0 };
+const undoStack = [];
+let saveTimer = null;
+let saveState = 'saved'; // saved | saving | error
+const fsApi = {
+  supported: typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function',
+  dir: null, name: '', ok: false, error: '', conflict: null,
+  lastSavedAt: 0, lastBackupDay: '', busy: false, again: false,
+};
+
+function loadMeta() {
+  try { meta = Object.assign(meta, JSON.parse(localStorage.getItem(META_KEY) || '{}')); } catch (e) { /* egal */ }
+}
+function saveMeta() {
+  try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) { /* egal */ }
+}
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return migrate(JSON.parse(raw));
+  } catch (e) { console.warn('Laden fehlgeschlagen', e); }
+  return null;
+}
+
+function pushUndo() {
+  undoStack.push(JSON.stringify(state));
+  if (undoStack.length > 25) undoStack.shift();
+}
+// Änderung am Datenbestand: Rückgängig-Punkt setzen, ausführen, speichern, neu zeichnen
+function mutate(fn) {
+  pushUndo();
+  const r = fn();
+  afterChange();
+  return r;
+}
+function afterChange() {
+  touch();
+  scheduleSave();
+  render();
+}
+function undo() {
+  const snap = undoStack.pop();
+  if (!snap) { toast('Nichts zum Rückgängigmachen'); return; }
+  state = migrate(JSON.parse(snap));
+  afterChange();
+  toast('Rückgängig gemacht');
+}
+
+/* ---------- Speichern (Browser und Datenordner) ---------- */
+
+function scheduleSave() {
+  saveState = 'saving';
+  updateFooter();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 350);
+}
+function saveLocalRaw() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    saveState = 'saved';
+  } catch (e) {
+    saveState = 'error';
+    console.error(e);
+  }
+  updateFooter();
+}
+function saveNow() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  state.savedAt = Math.max(Date.now(), (state.savedAt || 0) + 1, (fsApi.lastSavedAt || 0) + 1);
+  saveLocalRaw();
+  fsWrite();
+}
+window.addEventListener('beforeunload', () => { if (saveTimer) saveNow(); });
+
+/* ---------- Sicherung als Datei (geht in jedem Browser) ---------- */
+
+function downloadBackup() {
+  const blob = new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Dienstplan-Sicherung-' + fromDn(todayDn()) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  meta.lastBackup = Date.now();
+  saveMeta();
+  updateFooter();
+  toast('Sicherung heruntergeladen. Bitte an einem sicheren Ort aufbewahren.');
+}
+function restoreFromText(text) {
+  let s;
+  try { s = migrate(JSON.parse(text)); } catch (e) { toast('Diese Datei ist keine gültige Dienstplan-Sicherung.', 'bad'); return; }
+  confirmBox('Alle aktuellen Daten werden durch die Sicherung ersetzt (' + s.employees.length + ' Mitarbeiter). Fortfahren?', 'Sicherung laden', () => {
+    fsSafetyCopy('vor-Sicherung-laden');
+    pushUndo();
+    state = s;
+    afterChange();
+    toast('Sicherung geladen');
+  }, true);
+}
+
+/* ---------- Datenordner (Chrome / Edge) ---------- */
+
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('dienstplan-fs', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(k) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+}
+async function idbSet(k, v) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => { const q = db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); q.onsuccess = () => res(); q.onerror = () => rej(q.error); });
+}
+
+const dayStamp = t => { const d = new Date(t); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); };
+const timeStamp = t => { const d = new Date(t); return dayStamp(t) + '-' + p2(d.getHours()) + p2(d.getMinutes()); };
+const fmtStand = t => (t ? new Date(t).toLocaleString('de-AT', { dateStyle: 'short', timeStyle: 'short' }) : 'unbekannt');
+const summaryOf = s => s.employees.length + ' Mitarbeiter, ' + Object.keys(s.plan).reduce((n, k) => n + s.plan[k].length, 0) + ' Dienste';
+
+async function fsGetText(dir, name) { // null, wenn die Datei nicht existiert
+  try { return await (await (await dir.getFileHandle(name)).getFile()).text(); }
+  catch (e) { if (e && e.name === 'NotFoundError') return null; throw e; }
+}
+async function fsPutText(dir, name, text) { // schreibt über eine Zwischendatei, ein Abbruch beschädigt nichts
+  const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
+  await w.write(text);
+  await w.close();
+}
+// Stand aus dem Ordner: null = noch keine Datei; wirft bei beschädigter Datei
+async function fsReadState() {
+  const text = await fsGetText(fsApi.dir, DATA_FILE);
+  if (text == null || !text.trim()) return null;
+  return migrate(JSON.parse(text));
+}
+// Kopie im Unterordner "Sicherungen" ablegen, vorhandene Dateien werden nie überschrieben
+async function fsKeepCopy(name, text) {
+  const bd = await fsApi.dir.getDirectoryHandle(BACKUP_DIR, { create: true });
+  if ((await fsGetText(bd, name)) != null) return;
+  await fsPutText(bd, name, text);
+}
+// Aktuellen Stand vor dem Ersetzen im Ordner aufheben
+function fsSafetyCopy(label) {
+  if (!fsApi.dir || !fsApi.ok) return Promise.resolve();
+  const text = JSON.stringify(state, null, 1);
+  return fsKeepCopy('Dienstplan-' + label + '-' + timeStamp(Date.now()) + '.json', text).catch(() => { /* nicht kritisch */ });
+}
+async function fsPruneBackups() {
+  try {
+    const bd = await fsApi.dir.getDirectoryHandle(BACKUP_DIR, { create: true }), names = [];
+    for await (const e of bd.values()) if (e.kind === 'file' && /^Dienstplan-Sicherung-\d{4}-\d{2}-\d{2}\.json$/.test(e.name)) names.push(e.name);
+    names.sort();
+    for (const n of names.slice(0, Math.max(0, names.length - KEEP_BACKUPS))) await bd.removeEntry(n);
+  } catch (e) { /* Aufräumen ist nicht kritisch */ }
+}
+// Beim ersten Schreiben eines Tages den letzten Stand des früheren Arbeitstages als Tagessicherung aufheben
+async function fsDailyBackup() {
+  const today = dayStamp(Date.now());
+  if (fsApi.lastBackupDay === today) return;
+  const text = await fsGetText(fsApi.dir, DATA_FILE);
+  if (text) {
+    let at = 0;
+    try { at = JSON.parse(text).savedAt || 0; } catch (e) { at = 0; }
+    if (at && dayStamp(at) < today) await fsKeepCopy('Dienstplan-Sicherung-' + dayStamp(at) + '.json', text);
+  }
+  await fsPruneBackups();
+  fsApi.lastBackupDay = today;
+}
+
+async function fsWrite() {
+  if (!fsApi.dir || !fsApi.ok || fsApi.conflict) return;
+  if (fsApi.busy) { fsApi.again = true; return; } // läuft schon: danach noch einmal mit dem neuesten Stand
+  fsApi.busy = true;
+  try {
+    let cur = null;
+    try { cur = await fsReadState(); } catch (e) { throw new Error('Die Datei im Datenordner ist beschädigt und wurde nicht überschrieben.'); }
+    // hat jemand anderes (anderer Computer / Browser) die Datei inzwischen geändert?
+    if (cur && (cur.savedAt || 0) > fsApi.lastSavedAt) { fsApi.conflict = { file: cur }; fsConflictPrompt(); return; }
+    await fsDailyBackup();
+    const at = state.savedAt;
+    await fsPutText(fsApi.dir, DATA_FILE, JSON.stringify(state, null, 1));
+    fsApi.lastSavedAt = at;
+    meta.fsLastWritten = at;
+    meta.lastBackup = Date.now();
+    saveMeta();
+    fsApi.error = '';
+  } catch (e) {
+    console.error(e);
+    fsApi.ok = false;
+    fsApi.error = e.message || String(e);
+    toast('Im Datenordner konnte nicht gespeichert werden: ' + fsApi.error, 'bad');
+  } finally {
+    fsApi.busy = false;
+  }
+  updateFooter();
+  if (fsApi.again && fsApi.ok && !fsApi.conflict) { fsApi.again = false; fsWrite(); }
+}
+
+// Stand des Ordners übernehmen (ohne Rückfrage; nur aufrufen, wenn das eindeutig richtig ist)
+function fsAdoptSilently(file, msg) {
+  pushUndo();
+  state = file;
+  fsApi.lastSavedAt = file.savedAt || 0;
+  meta.fsLastWritten = fsApi.lastSavedAt;
+  saveMeta();
+  touch();
+  saveLocalRaw();
+  render();
+  if (msg) toast(msg);
+}
+// Abgleich beim Start / nach dem Wiederverbinden / auf Wunsch
+async function fsSync(manual) {
+  let file;
+  try { file = await fsReadState(); }
+  catch (e) { fsApi.ok = false; fsApi.error = 'Die Datei im Datenordner ist beschädigt.'; toast(fsApi.error + ' Es wurde nichts überschrieben. Die Tagessicherungen liegen im Unterordner „' + BACKUP_DIR + '“.', 'bad'); updateFooter(); return; }
+  if (!file) { saveNow(); return; } // Ordner ohne Datei: aktuellen Stand hineinschreiben
+  const fAt = file.savedAt || 0, lAt = state.savedAt || 0;
+  if (fAt === lAt) { fsApi.lastSavedAt = fAt; if (manual) toast('Bereits auf dem neuesten Stand.'); updateFooter(); return; }
+  if (fAt > lAt) { fsAdoptSilently(file, 'Neuere Daten aus dem Datenordner geladen (Stand ' + fmtStand(fAt) + ').'); return; }
+  if (fAt === (meta.fsLastWritten || 0)) { fsApi.lastSavedAt = fAt; await fsWrite(); return; } // nur eigene, noch nicht geschriebene Änderungen
+  fsApi.conflict = { file };
+  fsConflictPrompt();
+}
+async function fsInit() {
+  if (!fsApi.supported) return;
+  try {
+    const dir = await idbGet('dir');
+    if (!dir) return;
+    fsApi.dir = dir; fsApi.name = dir.name; fsApi.lastSavedAt = meta.fsLastWritten || 0;
+    const perm = typeof dir.queryPermission === 'function' ? await dir.queryPermission({ mode: 'readwrite' }) : 'granted';
+    if (perm === 'granted') { fsApi.ok = true; updateFooter(); await fsSync(false); } else updateFooter();
+  } catch (e) { console.warn('Datenordner nicht nutzbar', e); }
+}
+async function fsReconnect() {
+  try {
+    const perm = typeof fsApi.dir.requestPermission === 'function' ? await fsApi.dir.requestPermission({ mode: 'readwrite' }) : 'granted';
+    if (perm !== 'granted') { toast('Ohne Erlaubnis kann nicht im Datenordner gespeichert werden.', 'bad'); return; }
+    fsApi.ok = true; fsApi.error = '';
+    await fsSync(false);
+    render();
+    if (fsApi.ok && !fsApi.conflict) toast('Datenordner wieder verbunden');
+  } catch (e) { toast('Verbinden nicht möglich: ' + e.message, 'bad'); }
+}
+async function fsConnect() {
+  let dir;
+  try { dir = await window.showDirectoryPicker({ id: 'dienstplan-daten', mode: 'readwrite', startIn: 'documents' }); }
+  catch (e) { if (!e || e.name !== 'AbortError') toast('Der Ordner konnte nicht geöffnet werden: ' + (e && e.message), 'bad'); return; }
+  await fsAttach(dir);
+}
+// Ordner verbinden (Auswahl durch den Benutzer); bereits vorhandene Daten auf beiden Seiten werden nie stillschweigend ersetzt
+async function fsAttach(dir) {
+  fsApi.dir = dir; fsApi.name = dir.name; fsApi.ok = true; fsApi.error = ''; fsApi.conflict = null;
+  fsApi.lastSavedAt = 0; fsApi.lastBackupDay = ''; meta.fsLastWritten = 0; saveMeta();
+  try { await idbSet('dir', dir); } catch (e) { /* Verbindung gilt dann nur bis zum Schließen */ }
+  let file;
+  try { file = await fsReadState(); }
+  catch (e) { fsApi.dir = null; fsApi.ok = false; toast('In diesem Ordner liegt eine beschädigte oder fremde Datei „' + DATA_FILE + '“. Bitte einen anderen Ordner wählen.', 'bad'); render(); return; }
+  const localHas = state.employees.length > 0 || Object.keys(state.plan).length > 0;
+  if (!file) { saveNow(); render(); toast('Datenordner „' + dir.name + '“ verbunden. Die bisherigen Daten wurden hineingeschrieben.'); return; }
+  if (!localHas || (file.savedAt || 0) === (state.savedAt || 0)) { fsAdoptSilently(file, 'Datenordner „' + dir.name + '“ verbunden. Daten geladen (Stand ' + fmtStand(file.savedAt) + ').'); return; }
+  fsApi.conflict = { file };
+  render();
+  fsConflictPrompt();
+}
+async function fsDisconnect() {
+  fsApi.dir = null; fsApi.ok = false; fsApi.name = ''; fsApi.conflict = null; fsApi.error = '';
+  meta.fsLastWritten = 0; saveMeta();
+  try { await idbSet('dir', null); } catch (e) { /* egal */ }
+  render();
+}
+
+/* ---------- Abweichende Daten im Ordner ---------- */
+
+function fsConflictPrompt() {
+  const c = fsApi.conflict;
+  if (!c) return;
+  const f = c.file, folderNewer = (f.savedAt || 0) > (state.savedAt || 0);
+  updateFooter();
+  const adopt = { label: 'Daten aus dem Ordner laden', act: 'fs-adopt' };
+  const over = { label: 'Meine Daten in den Ordner schreiben', act: 'fs-overwrite' };
+  const main = folderNewer ? adopt : over, other = folderNewer ? over : adopt;
+  openModal({
+    title: 'Datenordner: abweichende Daten', submitLabel: main.label, noFocus: true,
+    body: '<p class="confirm-text">Die Daten im Datenordner sind nicht dieselben wie in diesem Browser. Das passiert, wenn zwischendurch auf einem anderen Computer oder in einem anderen Browser gearbeitet wurde.</p>' +
+      '<table class="list cfg"><thead><tr><th></th><th>Stand</th><th>Inhalt</th></tr></thead><tbody>' +
+      '<tr><td><b>Datenordner „' + esc(fsApi.name) + '“</b></td><td>' + fmtStand(f.savedAt) + '</td><td>' + esc(summaryOf(f)) + '</td></tr>' +
+      '<tr><td><b>Dieser Browser</b></td><td>' + fmtStand(state.savedAt) + '</td><td>' + esc(summaryOf(state)) + '</td></tr></tbody></table>' +
+      '<p class="muted">Die jeweils ersetzte Fassung wird im Unterordner „' + BACKUP_DIR + '“ aufgehoben, es geht nichts verloren. Solange nichts entschieden ist, wird im Datenordner nichts geändert.</p>',
+    extraHtml: '<button type="button" class="btn" data-act="' + other.act + '">' + other.label + '</button>',
+    onSubmit: () => { ACTIONS[main.act](); },
+  });
+}
+async function fsAdoptFolder() {
+  const c = fsApi.conflict;
+  if (!c) return;
+  await fsSafetyCopy('Browserstand');
+  fsApi.conflict = null;
+  fsAdoptSilently(c.file, 'Daten aus dem Datenordner geladen (Stand ' + fmtStand(c.file.savedAt) + ').');
+}
+async function fsOverwriteFolder() {
+  const c = fsApi.conflict;
+  if (!c) return;
+  try {
+    const old = await fsGetText(fsApi.dir, DATA_FILE);
+    if (old) await fsKeepCopy('Dienstplan-Ordnerstand-' + timeStamp(Date.now()) + '.json', old);
+  } catch (e) { /* nicht kritisch */ }
+  fsApi.lastSavedAt = c.file.savedAt || 0;
+  fsApi.conflict = null;
+  saveNow();
+  toast('Deine Daten wurden in den Datenordner geschrieben.');
+}
+
+// Text für die Fußzeile
+function backupStatus() {
+  if (fsApi.dir) {
+    if (fsApi.conflict) return { level: 'warn', text: 'Der Datenordner enthält abweichende Daten', action: 'fs-resolve', label: 'Klären' };
+    if (!fsApi.ok) return { level: 'warn', text: 'Datenordner „' + fsApi.name + '“ ist nicht verbunden. Änderungen werden vorerst nur im Browser gespeichert.', action: 'fs-reconnect', label: 'Wieder verbinden' };
+    return { level: 'ok', text: 'Gespeichert im Datenordner „' + fsApi.name + '“ (mit täglichen Sicherungen)' };
+  }
+  if (fsApi.supported) return { level: 'warn', text: 'Noch kein Datenordner gewählt. Die Daten liegen nur in diesem Browser.', action: 'fs-connect', label: 'Datenordner wählen' };
+  if (!meta.lastBackup) return { level: 'warn', text: 'Noch keine Sicherung. Die Daten liegen nur in diesem Browser.', action: 'backup', label: 'Jetzt sichern' };
+  const days = Math.floor((Date.now() - meta.lastBackup) / DAY_MS);
+  if (days >= 14) return { level: 'warn', text: 'Letzte Sicherung vor ' + days + ' Tagen', action: 'backup', label: 'Jetzt sichern' };
+  return { level: 'ok', text: 'Letzte Sicherung: ' + new Date(meta.lastBackup).toLocaleDateString('de-AT') };
+}
+
+/* ===== Oberfläche: gemeinsame Bausteine ===== */
+
+const $ = (sel, root) => (root || document).querySelector(sel);
+const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+
+const ACTIONS = {}; // data-act  -> Funktion(element, event)
+const CHANGE = {};  // data-chg  -> Funktion(element, event)
+
+const ui = {
+  tab: 'plan',
+  ws: mondayOf(todayDn()),
+  month: { y: ymd(todayDn()).y, m: ymd(todayDn()).m },
+  absYear: ymd(todayDn()).y,
+  absEmp: '',
+  holYear: ymd(todayDn()).y,
+};
+
+const opt = (val, label, sel) => '<option value="' + esc(val) + '"' + (sel ? ' selected' : '') + '>' + esc(label) + '</option>';
+const posDot = id => { const p = getPos(id); return p ? '<i class="pdot" style="background:' + p.color + '"></i>' : ''; };
+const saldoClass = x => (x > 0.004 ? 'plus' : x < -0.004 ? 'minus' : 'zero');
+
+/* ---------- Hinweise, Rückfragen, Fenster ---------- */
+
+let toastTimer;
+function toast(msg, kind) {
+  const el = $('#toast');
+  el.className = 'toast show ' + (kind || '');
+  el.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), kind === 'bad' ? 7000 : 3500);
+}
+
+function openModal(o) {
+  const root = $('#modal-root');
+  root.innerHTML =
+    '<div class="modal-back" data-act="modal-backdrop"><div class="modal' + (o.wide ? ' wide' : '') + '" role="dialog" aria-modal="true" aria-label="' + esc(o.title) + '">' +
+    '<form class="modal-form" autocomplete="off" novalidate>' +
+    '<div class="modal-head"><h3>' + esc(o.title) + '</h3><button type="button" class="icon-btn" data-act="modal-close" aria-label="Schließen">✕</button></div>' +
+    '<div class="modal-body">' + o.body + '</div>' +
+    '<div class="modal-foot">' + (o.extraHtml || '') + '<span class="sp"></span>' +
+    '<button type="button" class="btn" data-act="modal-close">' + (o.onSubmit ? 'Abbrechen' : 'Schließen') + '</button>' +
+    (o.onSubmit ? '<button type="submit" class="btn ' + (o.danger ? 'danger' : 'primary') + '">' + esc(o.submitLabel || 'Speichern') + '</button>' : '') +
+    '</div></form></div></div>';
+  const form = $('.modal-form', root);
+  form.addEventListener('submit', ev => {
+    ev.preventDefault();
+    if (o.onSubmit && o.onSubmit(form) === false) return;
+    closeModal();
+  });
+  if (o.onMount) o.onMount(form);
+  if (!o.noFocus) {
+    const first = $('input:not([type=hidden]):not([type=radio]):not([type=checkbox]):not([type=color]), select', form);
+    if (first) first.focus();
+  }
+}
+function closeModal() { $('#modal-root').innerHTML = ''; }
+function confirmBox(msg, okLabel, onOk, danger) {
+  openModal({ title: 'Bitte bestätigen', body: '<p class="confirm-text">' + esc(msg) + '</p>', submitLabel: okLabel || 'OK', danger, noFocus: true, onSubmit: () => { onOk(); } });
+}
+function showBusy(msg) { const b = $('#busy'); b.hidden = false; $('.busy-msg', b).textContent = msg; }
+function hideBusy() { $('#busy').hidden = true; }
+const nextTick = () => new Promise(r => setTimeout(r, 15));
+
+/* ---------- Kopfzeile / Fußzeile ---------- */
+
+function renderTop() {
+  const tabs = [['plan', 'Dienstplan'], ['emp', 'Mitarbeiter'], ['abs', 'Abwesenheiten'], ['report', 'Auswertung'], ['set', 'Einstellungen']];
+  $('#top').innerHTML =
+    '<div class="brand"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 13h4M7 17h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+    '<span>' + esc(state.settings.name) + '</span><small>Dienstplan</small></div>' +
+    '<nav>' + tabs.map(t => '<button class="tab' + (ui.tab === t[0] ? ' on' : '') + '" data-act="tab" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</nav>' +
+    '<div class="top-tools"><button class="btn ghost light" data-act="undo" title="Letzte Änderung rückgängig machen"' + (undoStack.length ? '' : ' disabled') + '>↶ Rückgängig</button></div>';
+}
+function updateFooter() {
+  const el = $('#foot');
+  if (!el) return;
+  const b = backupStatus();
+  const s = saveState === 'saving' ? 'Speichert …' : saveState === 'error' ? 'Speichern im Browser fehlgeschlagen!' : 'Alle Änderungen gespeichert';
+  el.innerHTML = '<span class="dot ' + (saveState === 'error' ? 'bad' : 'ok') + '"></span>' + s +
+    '<span class="sepdot">·</span><span class="dot ' + b.level + '"></span>' + esc(b.text) +
+    (b.action ? ' <button class="link" data-act="' + b.action + '">' + b.label + '</button>' : '');
+}
+
+/* ---------- Zeichnen ---------- */
+
+const VIEWS = {}; // tab -> Funktion, die HTML liefert
+function render() {
+  const active = document.activeElement;
+  const key = active && active.dataset ? active.dataset.key : null;
+  let caret = null;
+  if (key && typeof active.selectionStart === 'number') { try { caret = [active.selectionStart, active.selectionEnd]; } catch (e) { caret = null; } }
+  renderTop();
+  $('#main').innerHTML = VIEWS[ui.tab]();
+  document.body.dataset.tab = ui.tab;
+  document.title = state.settings.name + ' – Dienstplan';
+  updateFooter();
+  if (key) {
+    const el = $('[data-key="' + key + '"]');
+    if (el) { el.focus(); if (caret && typeof el.setSelectionRange === 'function') { try { el.setSelectionRange(caret[0], caret[1]); } catch (e) { /* egal */ } } }
+  }
+}
+
+/* ---------- Ereignisse ---------- */
+
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+  if (act === 'modal-backdrop') { if (ev.target === el) closeModal(); return; }
+  const fn = ACTIONS[act];
+  if (fn) { if (el.tagName !== 'INPUT') ev.preventDefault(); fn(el, ev); }
+});
+document.addEventListener('change', ev => {
+  const el = ev.target.closest('[data-chg]');
+  if (!el) return;
+  const fn = CHANGE[el.dataset.chg];
+  if (fn) fn(el, ev);
+});
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && $('#modal-root').firstChild) closeModal();
+  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') && !$('#modal-root').firstChild) {
+    ev.preventDefault(); undo();
+  }
+});
+
+ACTIONS['modal-close'] = () => closeModal();
+ACTIONS.tab = el => { ui.tab = el.dataset.tab; render(); window.scrollTo(0, 0); };
+ACTIONS.undo = () => undo();
+ACTIONS.print = () => window.print();
+ACTIONS.backup = () => downloadBackup();
+ACTIONS['fs-reconnect'] = () => fsReconnect();
+
+/* ===== Oberfläche: Dienstplan (Wochenansicht) ===== */
+
+function planEmployees(ws) {
+  const order = new Map(state.settings.positions.map((p, i) => [p.id, i]));
+  const list = state.employees.filter(e => {
+    const f = e.from ? toDn(e.from) : -1e9, t = e.to ? toDn(e.to) : 1e9;
+    if (e.active !== false && f <= ws + 6 && t >= ws) return true;
+    for (let k = 0; k < 7; k++) if (entriesOf(e.id, ws + k).length) return true;
+    return false;
+  });
+  const rank = e => (order.has(e.main) ? order.get(e.main) : 99);
+  return list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'de'));
+}
+
+function chipHtml(en, emp) {
+  const p = getPos(en.pos), sh = getShift(en.shift);
+  const color = p ? p.color : '#868e96';
+  const label = en.shift === 'custom' || !sh ? 'Eigene Zeit' : sh.name;
+  const other = p && en.pos !== emp.main ? ' · ' + p.name : '';
+  const title = label + ' · ' + (p ? p.name : '?') + ' · ' + fmtH(entHours(en)) + ' Std. (Pause ' + (en.pause || 0) + ' Min.)' + (en.manual ? ' · manuell geändert' : '');
+  return '<div class="chip' + (en.manual ? ' man' : '') + '" style="--pc:' + color + ';--pb:' + tint(color, 0.14) + '" title="' + esc(title) + '">' +
+    '<div class="t">' + esc(en.start) + '–' + esc(en.end) + '</div><div class="s">' + esc(label + other) + '</div></div>';
+}
+
+function cellHtml(emp, dn, st) {
+  const ens = entriesOf(emp.id, dn), abs = absenceOf(emp.id, dn);
+  let inner = '';
+  if (ens.length) inner = ens.slice().sort((a, b) => parseHM(a.start) - parseHM(b.start)).map(en => chipHtml(en, emp)).join('');
+  else if (abs) inner = '<div class="absc a-' + abs + '">' + esc(ABS_TYPES[abs] || abs) + '</div>';
+  const cls = ['cell'];
+  if (!st.open) cls.push('closed');
+  if (dn === todayDn()) cls.push('today');
+  if (!inner) cls.push('empty');
+  return '<td class="' + cls.join(' ') + '" data-act="cell" data-emp="' + emp.id + '" data-dn="' + dn + '">' + inner + '</td>';
+}
+
+function coverageHtml(ws) {
+  const S = state.settings;
+  let rows = '';
+  for (const p of S.positions) {
+    let tds = '';
+    for (let k = 0; k < 7; k++) {
+      const dn = ws + k;
+      if (!dayStatus(dn).open) { tds += '<td class="cv na">–</td>'; continue; }
+      const ens = dayEntries(dn), req = S.req[p.id][k];
+      const pill = (slot, lbl) => {
+        const have = ens.filter(en => en.pos === p.id && (covMask(en.cov) & (slot ? 2 : 1))).length;
+        return '<span class="pill ' + (have >= req[slot] ? 'ok' : 'bad') + '">' + lbl + ' ' + have + '/' + req[slot] + '</span>';
+      };
+      tds += '<td class="cv">' + pill(0, 'F') + pill(1, 'S') + '</td>';
+    }
+    rows += '<tr><th><i class="pdot" style="background:' + p.color + '"></i>' + esc(p.name) + '</th>' + tds + '</tr>';
+  }
+  let tot = '';
+  for (let k = 0; k < 7; k++) {
+    const dn = ws + k;
+    if (!dayStatus(dn).open) { tot += '<td class="cv na">–</td>'; continue; }
+    const n = new Set(dayEntries(dn).map(en => en.emp)).size;
+    tot += '<td class="cv"><span class="pill ' + (n >= S.minPersons ? 'ok' : 'bad') + '">' + n + ' Pers.</span></td>';
+  }
+  rows += '<tr class="tot"><th>Personen gesamt <small>(mind. ' + S.minPersons + ')</small></th>' + tot + '</tr>';
+  let head = '';
+  for (let k = 0; k < 7; k++) head += '<th>' + WD_SHORT[k] + ' ' + fmtDM(ws + k) + '</th>';
+  return '<table class="cov"><thead><tr><th>Besetzung <small>F = Früh · S = Spät</small></th>' + head + '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function hintsHtml(ws) {
+  const issues = checkWeek(ws);
+  const hard = issues.filter(i => i.type !== 'hours'), soft = issues.filter(i => i.type === 'hours');
+  let html = '';
+  const list = (arr, cls, icon) => {
+    const shown = arr.slice(0, 14).map(i => '<li class="' + cls + '"><span>' + icon + '</span>' + esc(describeIssue(i)) + '</li>').join('');
+    return shown + (arr.length > 14 ? '<li class="' + cls + '"><span>…</span>und ' + (arr.length - 14) + ' weitere</li>' : '');
+  };
+  if (hard.length) html += list(hard, 'bad', '⚠');
+  if (soft.length) html += list(soft, 'warn', 'ℹ');
+  if (!hard.length && !soft.length) {
+    const any = Array.from({ length: 7 }, (_, k) => dayEntries(ws + k).length).some(Boolean);
+    html = any ? '<li class="ok"><span>✓</span>Alles in Ordnung: Mindestbesetzung erfüllt, Ruhezeiten eingehalten, Wochenstunden passen.</li>'
+      : '<li class="warn"><span>ℹ</span>Für diese Woche ist noch nichts geplant. „Automatisch planen“ erstellt den Plan.</li>';
+  }
+  return '<ul class="hints">' + html + '</ul>';
+}
+
+function emptyStateHtml() {
+  return '<section class="card welcome"><h2>Willkommen im Dienstplan</h2>' +
+    '<p>So kommen Sie in drei Schritten zum ersten Dienstplan:</p>' +
+    '<ol><li><b>Mitarbeiter anlegen</b> mit Name, Anstellungsart, Wochenstunden, Urlaubsanspruch und Position.</li>' +
+    '<li><b>Einstellungen prüfen</b>: Öffnungstage, Dienstzeiten (Früh, Spät, durchgehend) und Mindestbesetzung je Position.</li>' +
+    '<li><b>„Automatisch planen“</b> erstellt den Dienstplan. Einzelne Dienste ändern Sie per Klick.</li></ol>' +
+    '<div class="row-btns"><button class="btn primary" data-act="emp-new">Ersten Mitarbeiter anlegen</button>' +
+    (fsApi.supported ? '<button class="btn" data-act="fs-connect">Vorhandenen Datenordner öffnen …</button>' : '') +
+    '<label class="btn">Sicherung laden<input type="file" accept=".json,application/json" hidden data-chg="restore-file"></label></div>' +
+    '<p class="tip">Neuer Computer? Den kopierten Datenordner oder eine Sicherungsdatei öffnen.</p></section>';
+}
+
+VIEWS.plan = function () {
+  if (!state.employees.length) return emptyStateHtml();
+  const ws = ui.ws, wk = isoWeek(ws), S = state.settings;
+  const emps = planEmployees(ws);
+  const days = Array.from({ length: 7 }, (_, k) => ({ dn: ws + k, st: dayStatus(ws + k) }));
+  const title = 'KW ' + wk.week + ' · ' + fmtDM(ws) + ' – ' + fmtDate(ws + 6);
+  let head = '<th class="c-emp">Mitarbeiter</th>';
+  for (const d of days) {
+    const tag = d.st.holiday ? '<span class="tag hol">' + esc(d.st.holiday) + '</span>' : '';
+    const closed = !d.st.open ? '<span class="tag cls">' + esc(d.st.closedReason) + '</span>' : '';
+    head += '<th class="dh' + (d.dn === todayDn() ? ' today' : '') + (!d.st.open ? ' closed' : '') + '"><span class="wd">' + WD_SHORT[d.st.wd] + '</span> <span class="dt">' + fmtDM(d.dn) + '</span>' + tag + closed + '</th>';
+  }
+  head += '<th class="c-wk">Woche<small>Ist / Soll Std.</small></th>';
+
+  let body = '', lastGroup = null;
+  const ncol = 9;
+  for (const e of emps) {
+    if (e.main !== lastGroup) {
+      lastGroup = e.main;
+      const p = getPos(e.main);
+      body += '<tr class="grp"><td colspan="' + ncol + '">' + (p ? '<i class="pdot" style="background:' + p.color + '"></i>' + esc(p.name) : 'Ohne Position') + '</td></tr>';
+    }
+    const t = empTotals(e, ws, ws + 6);
+    let row = '<th class="c-emp"><div class="en">' + esc(e.name) + (e.active === false ? ' <em>(inaktiv)</em>' : '') + '</div><div class="es">' + esc(e.type) + ' · ' + fmtNum(e.weekly, 1).replace(',0', '') + ' Std.</div></th>';
+    for (const d of days) row += cellHtml(e, d.dn, d.st);
+    row += '<td class="wk"><b>' + fmtNum(t.ist, 1) + '</b> / ' + fmtNum(t.soll, 1) + (t.soll > 0 ? '<small class="' + saldoClass(t.saldo) + '">' + fmtSigned(t.saldo) + '</small>' : '') + '</td>';
+    body += '<tr>' + row + '</tr>';
+  }
+
+  const legend = S.shifts.map(s => '<span class="lg"><b>' + esc(s.name) + '</b> ' + esc(s.start) + '–' + esc(s.end) + (s.pause ? ' (Pause ' + s.pause + ' Min.)' : '') + '</span>').join('');
+  const posLegend = S.positions.map(p => '<span class="lg"><i class="pdot" style="background:' + p.color + '"></i>' + esc(p.name) + '</span>').join('');
+
+  return '<div class="toolbar no-print">' +
+    '<div class="weeknav"><button class="btn icon" data-act="week-prev" aria-label="Vorherige Woche">◀</button>' +
+    '<div class="weeklabel">' + esc(title) + '</div>' +
+    '<button class="btn icon" data-act="week-next" aria-label="Nächste Woche">▶</button>' +
+    '<button class="btn" data-act="week-today">Heute</button>' +
+    '<input type="date" class="datejump" value="' + fromDn(ws) + '" data-chg="week-jump" aria-label="Zu Datum springen"></div>' +
+    '<div class="tools"><button class="btn primary" data-act="plan-open">Automatisch planen …</button>' +
+    '<button class="btn" data-act="week-clear">Woche leeren</button>' +
+    '<button class="btn" data-act="print">Drucken / PDF</button></div></div>' +
+    '<div class="print-title">' + esc(S.name) + ' · Dienstplan ' + esc(title) + '</div>' +
+    '<section class="card planwrap"><table class="plan"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></section>' +
+    '<div class="legend">' + posLegend + '<span class="sep">|</span>' + legend + '</div>' +
+    '<div class="two"><section class="card"><h3>Besetzung dieser Woche</h3>' + coverageHtml(ws) + '</section>' +
+    '<section class="card no-print"><h3>Hinweise</h3>' + hintsHtml(ws) + '<p class="tip">Ein Klick auf ein Feld ändert den Dienst. Manuell geänderte Dienste (Punkt am Feld) bleiben bei neuer Planung erhalten.</p></section></div>';
+};
+
+/* ---------- Navigation ---------- */
+ACTIONS['week-prev'] = () => { ui.ws -= 7; render(); };
+ACTIONS['week-next'] = () => { ui.ws += 7; render(); };
+ACTIONS['week-today'] = () => { ui.ws = mondayOf(todayDn()); render(); };
+CHANGE['week-jump'] = el => { const d = toDn(el.value); if (!isNaN(d)) { ui.ws = mondayOf(d); render(); } };
+ACTIONS['week-clear'] = () => {
+  const ws = ui.ws;
+  confirmBox('Alle Dienste der Woche vom ' + fmtDate(ws) + ' bis ' + fmtDate(ws + 6) + ' löschen?', 'Woche leeren', () => {
+    mutate(() => { for (let k = 0; k < 7; k++) delete state.plan[fromDn(ws + k)]; });
+    toast('Woche geleert');
+  }, true);
+};
+
+/* ---------- Dienst einer Person an einem Tag bearbeiten ---------- */
+
+function entryRowHtml(emp, en) {
+  const S = state.settings;
+  const sh = en ? (en.shift === 'custom' ? null : getShift(en.shift)) : S.shifts[0];
+  const start = en ? en.start : S.shifts[0].start, end = en ? en.end : S.shifts[0].end, pause = en ? en.pause : S.shifts[0].pause;
+  const selShift = en ? (sh && sh.start === start && sh.end === end && (+sh.pause || 0) === (+pause || 0) ? sh.id : 'custom') : S.shifts[0].id;
+  const pos = en ? en.pos : emp.main;
+  return '<div class="erow"><select name="shift" data-chg="erow-shift" aria-label="Dienstart">' +
+    S.shifts.map(s => opt(s.id, s.name, s.id === selShift)).join('') + opt('custom', 'Eigene Zeit', selShift === 'custom') + '</select>' +
+    '<input type="time" name="start" value="' + esc(start) + '" data-chg="erow-time" aria-label="von">' +
+    '<span class="dash">–</span>' +
+    '<input type="time" name="end" value="' + esc(end) + '" data-chg="erow-time" aria-label="bis">' +
+    '<label class="pz">Pause <input type="number" name="pause" min="0" max="600" step="5" value="' + (+pause || 0) + '" data-chg="erow-time"> Min.</label>' +
+    '<select name="pos" aria-label="Position">' + S.positions.map(p => opt(p.id, p.name, p.id === pos)).join('') + '</select>' +
+    '<button type="button" class="icon-btn" data-act="erow-del" aria-label="Dienst entfernen">✕</button></div>';
+}
+CHANGE['erow-shift'] = el => {
+  const row = el.closest('.erow'), sh = getShift(el.value);
+  if (!sh) return;
+  row.querySelector('[name=start]').value = sh.start;
+  row.querySelector('[name=end]').value = sh.end;
+  row.querySelector('[name=pause]').value = sh.pause || 0;
+};
+CHANGE['erow-time'] = el => {
+  const row = el.closest('.erow'), sel = row.querySelector('[name=shift]'), sh = getShift(sel.value);
+  if (!sh) return;
+  const same = row.querySelector('[name=start]').value === sh.start && row.querySelector('[name=end]').value === sh.end && (+row.querySelector('[name=pause]').value || 0) === (+sh.pause || 0);
+  if (!same) sel.value = 'custom';
+};
+ACTIONS['erow-del'] = el => { el.closest('.erow').remove(); };
+ACTIONS['erow-add'] = el => {
+  const form = el.closest('form');
+  const emp = getEmp(form.dataset.emp);
+  $('.erows', form).insertAdjacentHTML('beforeend', entryRowHtml(emp, null));
+};
+
+ACTIONS.cell = el => openCellEditor(el.dataset.emp, +el.dataset.dn);
+
+function openCellEditor(empId, dn) {
+  const emp = getEmp(empId);
+  if (!emp) return;
+  const ens = entriesOf(empId, dn).slice().sort((a, b) => parseHM(a.start) - parseHM(b.start));
+  const abs = absenceOf(empId, dn), st = dayStatus(dn);
+  const mode = ens.length ? 'dienst' : abs || 'leer';
+  const radio = (v, label) => '<label class="segbtn"><input type="radio" name="mode" value="' + v + '"' + (mode === v ? ' checked' : '') + '><span>' + label + '</span></label>';
+  const body =
+    (st.closedReason ? '<p class="note warn">Das Restaurant ist an diesem Tag geschlossen (' + esc(st.closedReason) + ').</p>' : '') +
+    '<div class="seg" role="radiogroup" aria-label="Status">' + radio('dienst', 'Dienst') + radio('leer', 'Kein Dienst') + radio('frei', 'Frei (fix)') + radio('urlaub', 'Urlaub') + radio('krank', 'Krank') + radio('za', 'Zeitausgleich') + '</div>' +
+    '<div class="mode mode-dienst"><div class="erows">' + (ens.length ? ens.map(en => entryRowHtml(emp, en)).join('') : entryRowHtml(emp, null)) + '</div>' +
+    '<button type="button" class="btn sm" data-act="erow-add">+ Weiteren Dienst an diesem Tag</button></div>' +
+    '<p class="note mode mode-leer">Für diesen Tag ist kein Dienst eingetragen. Bei der nächsten automatischen Planung kann hier wieder ein Dienst eingeteilt werden.</p>' +
+    '<p class="note mode mode-frei">Der Tag wird fest freigehalten. Die automatische Planung teilt hier keinen Dienst ein, es wird kein Urlaub abgezogen.</p>' +
+    '<p class="note mode mode-abs">Wird für diesen einen Tag als Abwesenheit eingetragen. Längere Zeiträume: Registerkarte „Abwesenheiten“.</p>';
+  openModal({
+    title: emp.name + ' · ' + WD_LONG[wdOf(dn)] + ', ' + fmtDate(dn), body, noFocus: true,
+    onMount: form => {
+      form.dataset.emp = empId;
+      const sync = () => {
+        const m = form.mode.value;
+        $$('.mode', form).forEach(x => { x.hidden = !(x.classList.contains('mode-' + m) || (x.classList.contains('mode-abs') && (m === 'urlaub' || m === 'krank' || m === 'za'))); });
+      };
+      $$('input[name=mode]', form).forEach(r => r.addEventListener('change', sync));
+      sync();
+    },
+    onSubmit: form => {
+      const m = form.mode.value;
+      if (m === 'dienst') {
+        const rows = [];
+        for (const r of $$('.erow', form)) {
+          const start = r.querySelector('[name=start]').value, end = r.querySelector('[name=end]').value;
+          const pause = Math.max(0, +r.querySelector('[name=pause]').value || 0);
+          if (isNaN(parseHM(start)) || isNaN(parseHM(end)) || start === end) { toast('Bitte Beginn und Ende des Dienstes eintragen.', 'bad'); return false; }
+          const tpl = getShift(r.querySelector('[name=shift]').value);
+          const same = tpl && tpl.start === start && tpl.end === end && (+tpl.pause || 0) === pause;
+          rows.push({ pos: r.querySelector('[name=pos]').value, sh: same ? tpl : { id: 'custom', start, end, pause } });
+        }
+        if (!rows.length) { toast('Bitte mindestens einen Dienst eintragen oder „Kein Dienst“ wählen.', 'bad'); return false; }
+        mutate(() => {
+          removeEntriesOf(empId, dn, dn);
+          setAbsenceDay(empId, dn, null);
+          rows.forEach(r => addEntry(dn, makeEntry(empId, r.pos, r.sh, true)));
+        });
+      } else {
+        mutate(() => {
+          removeEntriesOf(empId, dn, dn);
+          setAbsenceDay(empId, dn, m === 'leer' ? null : m);
+        });
+      }
+    },
+  });
+}
+
+/* ---------- Automatisch planen ---------- */
+
+function planPreset(p) {
+  const t = todayDn(), ws = ui.ws;
+  const startOf = base => (t >= base && t <= base + 6 ? t : base);
+  if (p === 'week') return [startOf(ws), ws + 6];
+  if (p === 'weeks4') return [startOf(ws), ws + 27];
+  const c = ymd(ws + 3), ms = monthStart(c.y, c.m), me = monthEnd(c.y, c.m);
+  return [t >= ms && t <= me ? t : ms, me];
+}
+ACTIONS['plan-open'] = () => {
+  const [from, to] = planPreset('week');
+  openModal({
+    title: 'Automatisch planen', submitLabel: 'Plan erstellen', noFocus: true,
+    body: '<p class="lead">Der Plan wird aus Mindestbesetzung je Position, Wochenstunden, Urlaub, freien Tagen und Ruhezeiten erstellt. Danach lassen sich einzelne Dienste per Klick ändern.</p>' +
+      '<div class="row2"><label>Von<input type="date" name="from" value="' + fromDn(from) + '" data-chg="plan-range"></label><label>Bis<input type="date" name="to" value="' + fromDn(to) + '" data-chg="plan-range"></label></div>' +
+      '<div class="presets"><button type="button" class="btn sm" data-act="plan-preset" data-p="week">Angezeigte Woche</button>' +
+      '<button type="button" class="btn sm" data-act="plan-preset" data-p="weeks4">4 Wochen</button>' +
+      '<button type="button" class="btn sm" data-act="plan-preset" data-p="month">Ganzer Monat</button></div>' +
+      '<label class="chk"><input type="checkbox" name="keep" checked> Manuell geänderte Dienste beibehalten</label>' +
+      '<p class="note warn" id="planwarn" hidden>Der Zeitraum enthält vergangene Tage. Bereits eingetragene Dienste dort werden überschrieben (außer manuell geänderte).</p>',
+    onMount: form => { CHANGE['plan-range'](form.from); },
+    onSubmit: form => {
+      const from = toDn(form.from.value), to = toDn(form.to.value);
+      if (isNaN(from) || isNaN(to) || to < from) { toast('Bitte einen gültigen Zeitraum wählen.', 'bad'); return false; }
+      if (to - from > 400) { toast('Der Zeitraum ist zu lang (höchstens etwa 13 Monate).', 'bad'); return false; }
+      const keep = form.keep.checked;
+      setTimeout(() => runPlan(from, to, keep), 30);
+    },
+  });
+};
+ACTIONS['plan-preset'] = el => {
+  const form = el.closest('form'), [from, to] = planPreset(el.dataset.p);
+  form.from.value = fromDn(from); form.to.value = fromDn(to);
+  CHANGE['plan-range'](form.from);
+};
+CHANGE['plan-range'] = el => {
+  const form = el.closest('form'), w = $('#planwarn', form), f = toDn(form.from.value);
+  if (w) w.hidden = !(f < todayDn());
+};
+
+async function runPlan(from, to, keepManual) {
+  const weeks = weeksOf(from, to);
+  pushUndo();
+  showBusy('Dienstplan wird erstellt …');
+  await nextTick();
+  try {
+    for (let i = 0; i < weeks.length; i++) {
+      $('.busy-msg', $('#busy')).textContent = weeks.length > 1 ? 'Woche ' + (i + 1) + ' von ' + weeks.length + ' wird geplant …' : 'Dienstplan wird erstellt …';
+      await nextTick();
+      planWeek(weeks[i], { from, to, keepManual });
+    }
+  } catch (e) {
+    console.error(e);
+    hideBusy();
+    toast('Beim Planen ist ein Fehler aufgetreten: ' + e.message, 'bad');
+    return;
+  }
+  hideBusy();
+  if (ui.ws < mondayOf(from) || ui.ws > to) ui.ws = mondayOf(from);
+  afterChange();
+  let cover = 0, other = 0;
+  for (const ws of weeks) for (const i of checkWeek(ws)) {
+    if (i.dn == null || i.dn < from || i.dn > to) continue; // nur der geplante Zeitraum
+    if (i.type === 'cover' || i.type === 'minp') cover++; else other++;
+  }
+  if (cover || other) toast('Plan erstellt, aber mit ' + (cover + other) + ' Hinweis(en): Personal reicht nicht für alle Vorgaben. Siehe „Hinweise“.', 'bad');
+  else toast(weeks.length > 1 ? weeks.length + ' Wochen geplant. Alle Vorgaben erfüllt.' : 'Woche geplant. Alle Vorgaben erfüllt.');
+}
+
+/* ===== Oberfläche: Mitarbeiter ===== */
+
+// Monatswerte einer Person (auch für die Auswertung genutzt)
+function monthStats(emp, y, m) {
+  const a = monthStart(y, m), b = monthEnd(y, m), win = empWindow(emp);
+  const recs = empDayRecords(emp, a, b);
+  return { recs, t: sumRecords(recs), acc: empAccount(emp, b), vac: vacationInfo(emp, b), active: win.a <= b && win.b >= a };
+}
+function monthNavHtml() {
+  return '<div class="monthnav"><button class="btn icon" data-act="month-prev" aria-label="Vorheriger Monat">◀</button>' +
+    '<div class="monthlabel">' + MONTHS[ui.month.m - 1] + ' ' + ui.month.y + '</div>' +
+    '<button class="btn icon" data-act="month-next" aria-label="Nächster Monat">▶</button>' +
+    '<button class="btn" data-act="month-today">Aktueller Monat</button></div>';
+}
+ACTIONS['month-prev'] = () => { if (--ui.month.m < 1) { ui.month.m = 12; ui.month.y--; } render(); };
+ACTIONS['month-next'] = () => { if (++ui.month.m > 12) { ui.month.m = 1; ui.month.y++; } render(); };
+ACTIONS['month-today'] = () => { const t = ymd(todayDn()); ui.month = { y: t.y, m: t.m }; render(); };
+
+// ausgeschieden: manuell so markiert oder das Austrittsdatum liegt in der Vergangenheit
+const isInactive = e => e.active === false || !!(e.to && toDn(e.to) < todayDn());
+
+function empPositions(e) {
+  return [e.main].concat(e.alt || []).filter((id, i, a) => id && a.indexOf(id) === i).map(getPos).filter(Boolean);
+}
+
+VIEWS.emp = function () {
+  const { y, m } = ui.month;
+  const rowHtml = e => {
+    const s = monthStats(e, y, m);
+    const pos = empPositions(e).map(p => '<span class="ptag"><i class="pdot" style="background:' + p.color + '"></i>' + esc(p.name) + '</span>').join('');
+    let cells;
+    if (!s.active) cells = '<td colspan="5" class="muted c">nicht im Zeitkonto dieses Monats</td>';
+    else {
+      const v = s.vac;
+      const rest = v ? '<b title="Urlaubsjahr ' + fmtDate(v.yStart) + ' – ' + fmtDate(v.yEnd) + '">' + (v.final ? fmtDaysExact(v.rest) : fmtDays(v.rest)) + '</b> <small>von ' + (v.final ? fmtDaysExact(v.entitlement + v.carry) : fmtDays(v.entitlement + v.carry)) + '</small>' +
+        (v.final ? '<small class="muted"> (Abrechnung zum Austritt)</small>' : v.later ? '<small class="muted"> (' + fmtDays(v.later) + ' danach geplant)</small>' : '') : '–';
+      cells = '<td class="r">' + fmtH(s.t.ist) + '</td><td class="r">' + fmtH(s.t.soll) + '</td>' +
+        '<td class="r ' + saldoClass(s.t.saldo) + '"><b>' + fmtSigned(s.t.saldo) + '</b></td>' +
+        '<td class="r ' + saldoClass(s.acc.konto) + '"><b>' + fmtSigned(s.acc.konto) + '</b></td><td class="r">' + rest + '</td>';
+    }
+    return '<tr class="click" data-act="emp-edit" data-id="' + e.id + '"><td><b>' + esc(e.name) + '</b></td><td>' + esc(e.type) + '</td><td class="r">' + fmtNum(e.weekly, 1).replace(',0', '') + '</td><td>' + pos + '</td>' + cells + '</tr>';
+  };
+  const act = state.employees.filter(e => !isInactive(e)), inact = state.employees.filter(isInactive);
+  const head = '<thead><tr><th>Name</th><th>Anstellungsart</th><th class="r">Std./Woche</th><th>Positionen</th><th class="r">Ist (Std.)</th><th class="r">Soll (Std.)</th><th class="r">Plus/Minus</th><th class="r">Zeitkonto gesamt</th><th class="r">Resturlaub (Tage)</th></tr></thead>';
+  return '<div class="toolbar no-print">' + monthNavHtml() + '<div class="tools"><button class="btn" data-act="stand-open">Stände &amp; Eintritt übernehmen …</button><button class="btn primary" data-act="emp-new">+ Mitarbeiter</button></div></div>' +
+    (state.employees.length ? '<section class="card"><h3>Mitarbeiter</h3><div class="tablewrap"><table class="list">' + head + '<tbody>' + act.map(rowHtml).join('') + '</tbody></table></div>' +
+      '<p class="tip">Ist, Soll, Plus/Minus und Resturlaub werden automatisch aus dem Dienstplan errechnet. Ein Klick auf eine Zeile öffnet die Stammdaten; dort lässt sich ein Mitarbeiter auch als „Ausgeschieden“ markieren (Auswertungen bleiben erhalten) oder endgültig löschen. Eintrittsdatum, Resturlaub und Plus-/Minusstunden bestehender Mitarbeiter werden über „Stände &amp; Eintritt übernehmen …“ (alle auf einmal) oder in den Stammdaten eingetragen.</p></section>' +
+      (inact.length ? '<section class="card"><h3>Ausgeschieden / inaktiv</h3><div class="tablewrap"><table class="list">' + head + '<tbody>' + inact.map(rowHtml).join('') + '</tbody></table></div></section>' : '')
+      : emptyStateHtml());
+};
+
+/* ---------- Stammdaten bearbeiten ---------- */
+
+ACTIONS['emp-new'] = () => openEmpEditor(null);
+ACTIONS['emp-edit'] = el => openEmpEditor(el.dataset.id);
+// Neue Mitarbeiter: Resturlaub folgt dem Anspruch, solange er nicht von Hand geändert wurde
+function syncVacRest(form, newVac) {
+  if (form.dataset.isnew !== '1') return;
+  const r = form.elements.vacRest;
+  if (+r.value === +form.dataset.vac) r.value = newVac;
+  form.dataset.vac = newVac;
+}
+// Mitarbeiter-Objekt aus den (noch nicht gespeicherten) Formularwerten, für Vorschau und Hinweise
+function formEmp(form) {
+  const base = getEmp(form.dataset.emp) || newEmployee('Vollzeit', { id: form.dataset.emp });
+  const stand = toDn(form.elements.standDate.value), E = form.elements;
+  return Object.assign({}, base, {
+    weekly: +E.weekly.value || 0, days: Math.round(+E.days.value) || 5, vac: +E.vac.value || 0,
+    offDays: $$('input[name=off]:checked', form).map(x => +x.value), from: E.from.value, to: E.to.value,
+    trackFrom: isNaN(stand) ? base.trackFrom : fromDn(stand + 1),
+    vacRest: E.vacRest.value === '' ? null : +E.vacRest.value, balStart: +E.balStart.value || 0, vacCarry: 0, vacUsedBefore: 0,
+  });
+}
+// Urlaubsabrechnung beim Austritt als Text
+function settlementHtml(v, exitDn) {
+  const rest = v.rest;
+  const verdict = rest > 0.004 ? '<b class="plus">' + fmtDaysExact(rest) + ' Tage Urlaub sind bei Austritt noch offen (Urlaubsersatzleistung).</b>'
+    : rest < -0.004 ? '<b class="minus">' + fmtDaysExact(-rest) + ' Tage mehr Urlaub genommen, als bis zum Austritt zustehen.</b>' : '<b>Der Urlaub ist genau aufgebraucht.</b>';
+  return '<b>Urlaubsabrechnung zum Austritt am ' + fmtDate(exitDn) + '</b><br>Urlaubsjahr ' + fmtDate(v.yStart) + ' bis ' + fmtDate(v.yEnd) + ': Jahresanspruch ' + fmtDays(v.fullEntitlement) +
+    ' Tage, aliquot für ' + v.daysWorked + ' von ' + v.daysInYear + ' Tagen = <b>' + fmtDaysExact(v.entitlement) + ' Tage</b>' + (v.carry ? ' · Übertrag aus früheren Urlaubsjahren ' + fmtDaysExact(v.carry) + ' Tage' : '') +
+    ' · genommen ' + fmtDaysExact(v.used) + ' Tage<br>' + verdict + ' <span class="muted">Rundung und rechtliche Prüfung bitte mit der Lohnverrechnung abstimmen.</span>';
+}
+// Warnungen im Formular: Lücke seit dem Stand, Urlaubsabrechnung bei eingetragenem Austritt
+function updateHints(form) {
+  const emp = formEmp(form), stand = toDn(form.elements.standDate.value);
+  const hint = form.querySelector('#standHint'), box = form.querySelector('#exitBox');
+  if (hint) {
+    const g = standGap(emp, stand, todayDn());
+    if (!g || g.saldo > -4) hint.hidden = true;
+    else {
+      hint.hidden = false;
+      hint.innerHTML = '<b>Achtung:</b> Zwischen dem Stand (' + fmtDate(stand) + ') und gestern liegen ' + g.days + ' Tage. Dafür rechnet das Programm ' + fmtH(g.soll) + ' Std. Soll, eingetragen sind aber nur ' + fmtH(g.ist) + ' Std. Das ergibt ' + fmtSigned(g.saldo) + ' Std. Besser: den Stand auf den Tag vor dem ersten Programmtag legen oder die bisherigen Dienste im Dienstplan nachtragen.';
+    }
+  }
+  if (box) {
+    const ex = toDn(form.elements.to.value), v = isNaN(ex) ? null : vacationSettlement(emp, ex);
+    box.hidden = !form.elements.to.value;
+    if (!box.hidden) box.innerHTML = v ? settlementHtml(v, ex) : 'Für das Austrittsdatum ist noch keine Urlaubsberechnung möglich (Eintritt bzw. Stand prüfen).';
+  }
+}
+function standPreview(e) {
+  const t = todayDn(), win = empWindow(e);
+  if (win.a > t) return 'Das Programm beginnt am ' + fmtDate(win.a) + ' zu zählen.';
+  const acc = empAccount(e, t), vi = vacationInfo(e, t);
+  let s = '<b>Aktuell laut Programm (heute):</b> Resturlaub ' + (vi ? (vi.final ? fmtDaysExact(vi.rest) : fmtDays(vi.rest)) : '–') + ' Tage · Zeitkonto ' + fmtSigned(acc.konto) + ' Std.';
+  if (vi && !vi.final) {
+    const next = vi.yEnd + 1;
+    if (next <= win.b) s += '<br>Nächste Gutschrift: +' + fmtDays(e.vac) + ' Tage am ' + fmtDate(next) + ' (Jahrestag des Eintritts).';
+  }
+  return s;
+}
+CHANGE['emp-type'] = el => {
+  const form = el.closest('form');
+  if (form.dataset.isnew !== '1') return;
+  const t = EMP_TYPES[el.value];
+  if (!t) return;
+  syncVacRest(form, 5 * t.days);
+  form.weekly.value = t.weekly; form.days.value = t.days; form.vac.value = 5 * t.days;
+  form.dataset.days = t.days;
+  updateHints(form);
+};
+CHANGE['emp-days'] = el => {
+  const form = el.closest('form');
+  if (+form.vac.value === 5 * (+form.dataset.days || 5)) { const nv = 5 * (+el.value || 5); syncVacRest(form, nv); form.vac.value = nv; }
+  form.dataset.days = el.value;
+  updateHints(form);
+};
+CHANGE['emp-vac'] = el => { const form = el.closest('form'); syncVacRest(form, +el.value || 0); updateHints(form); };
+CHANGE['emp-stand'] = el => updateHints(el.closest('form'));
+
+function openEmpEditor(id) {
+  const S = state.settings;
+  if (!S.positions.length) { toast('Bitte zuerst in den Einstellungen mindestens eine Position anlegen.', 'bad'); return; }
+  const isNew = !id;
+  const e = isNew ? newEmployee('Vollzeit', { main: S.positions[0].id }) : getEmp(id);
+  if (!e) return;
+  const chk = (name, val, label, on) => '<label class="chk sm"><input type="checkbox" name="' + name + '" value="' + esc(val) + '"' + (on ? ' checked' : '') + '>' + esc(label) + '</label>';
+  const num = (name, val, extra) => '<input type="number" name="' + name + '" value="' + esc(val) + '" ' + (extra || '') + '>';
+  const body =
+    '<div class="grid2">' +
+    '<label class="fld full">Name<input type="text" name="name" value="' + esc(e.name) + '" placeholder="Vor- und Nachname" required></label>' +
+    '<label class="fld">Anstellungsart<select name="type" data-chg="emp-type">' + Object.keys(EMP_TYPES).map(t => opt(t, t, e.type === t)).join('') + '</select></label>' +
+    '<label class="fld">Eintrittsdatum<input type="date" name="from" value="' + esc(e.from) + '" data-chg="emp-stand" required><small>Am Jahrestag des Eintritts kommen jedes Jahr neu die Urlaubstage dazu.</small></label>' +
+    '<label class="fld">Normalarbeitszeit (Std. pro Woche)' + num('weekly', e.weekly, 'min="0" max="80" step="0.5" data-chg="emp-stand"') + '</label>' +
+    '<label class="fld">Arbeitstage pro Woche' + num('days', e.days, 'min="1" max="7" step="1" data-chg="emp-days"') + '</label>' +
+    '<label class="fld">Urlaubsanspruch (Tage pro Urlaubsjahr)' + num('vac', e.vac, 'min="0" max="60" step="0.5" data-chg="emp-vac"') + '<small>Wird jährlich zum Jahrestag des Eintritts gutgeschrieben (5 Wochen: bei 5 Arbeitstagen 25 Tage).</small></label>' +
+    '<label class="fld">Austrittsdatum (nur beim Ausscheiden)<input type="date" name="to" value="' + esc(e.to) + '" data-chg="emp-stand"><small>Der Urlaub wird bis zu diesem Tag aliquot abgerechnet.</small></label>' +
+    '</div><div class="note" id="exitBox" hidden></div>' +
+    '<h4>Einsatz</h4><div class="grid2">' +
+    '<label class="fld">Hauptposition<select name="main">' + S.positions.map(p => opt(p.id, p.name, e.main === p.id)).join('') + '</select></label>' +
+    '<div class="fld">Kann auch arbeiten als<div class="chks">' + S.positions.map(p => chk('alt', p.id, p.name, (e.alt || []).indexOf(p.id) >= 0)).join('') + '</div></div>' +
+    '<div class="fld">Erlaubte Dienste<div class="chks">' + S.shifts.map(s => chk('allowed', s.id, s.name + ' ' + s.start + '–' + s.end, !e.allowed || e.allowed.indexOf(s.id) >= 0)).join('') + '</div></div>' +
+    '<div class="fld">Fix frei an (z. B. Schule, Zweitjob)<div class="chks">' + WD_SHORT.map((d, k) => chk('off', k, d, (e.offDays || []).indexOf(k) >= 0)).join('') + '</div></div>' +
+    '</div>' +
+    '<h4>Übernahme bisheriger Stände</h4>' +
+    '<p class="muted">Bei bestehenden Mitarbeitern hier den Stand laut bisheriger Aufzeichnung (z. B. letzte Lohnabrechnung) mit Datum eintragen. Ab dem Tag danach rechnet das Programm weiter. Die Werte lassen sich jederzeit ändern.</p>' +
+    '<div class="grid2">' +
+    '<label class="fld">Stand per (Datum)<input type="date" name="standDate" value="' + fromDn(toDn(e.trackFrom) - 1) + '" data-chg="emp-stand" required><small>Die beiden Werte unten gelten am Ende dieses Tages.</small></label><div></div>' +
+    '<label class="fld">Resturlaub per Stand (Tage)' + num('vacRest', vacRestOf(e), 'step="0.5"') + '<small>Alles, was der Mitarbeiter zu diesem Datum noch zugute hat (auch Rest aus dem Vorjahr).</small></label>' +
+    '<label class="fld">Plus- oder Minusstunden per Stand (Std.)' + num('balStart', e.balStart, 'step="0.25"') + '<small>Plusstunden positiv, Minusstunden negativ, z. B. -6,5</small></label>' +
+    '</div><p class="note warn" id="standHint" hidden></p>' + (isNew ? '' : '<p class="note" id="standNow">' + standPreview(e) + '</p>') +
+    '<label class="fld full">Notiz<input type="text" name="note" value="' + esc(e.note) + '"></label>';
+  let extra = '';
+  if (!isNew) extra = '<button type="button" class="btn danger ghost" data-act="emp-delete" data-id="' + e.id + '">Löschen</button>' +
+    (e.active === false ? '<button type="button" class="btn" data-act="emp-reactivate" data-id="' + e.id + '">Wieder aktivieren</button>' : '<button type="button" class="btn" data-act="emp-deactivate" data-id="' + e.id + '">Austritt erfassen …</button>');
+  openModal({
+    title: isNew ? 'Neuer Mitarbeiter' : e.name, body, extraHtml: extra, wide: true,
+    onMount: form => { form.dataset.isnew = isNew ? '1' : '0'; form.dataset.days = e.days; form.dataset.vac = e.vac; form.dataset.emp = e.id; updateHints(form); },
+    onSubmit: form => {
+      const v = n => form.elements[n].value;
+      const name = v('name').trim();
+      if (!name) { toast('Bitte einen Namen eintragen.', 'bad'); form.elements.name.focus(); return false; }
+      const weekly = +v('weekly'), days = Math.round(+v('days'));
+      if (!(weekly >= 0 && weekly <= 80)) { toast('Die Wochenstunden müssen zwischen 0 und 80 liegen.', 'bad'); return false; }
+      if (!(days >= 1 && days <= 7)) { toast('Die Arbeitstage pro Woche müssen zwischen 1 und 7 liegen.', 'bad'); return false; }
+      if (!v('from')) { toast('Bitte das Eintrittsdatum angeben. Es bestimmt, wann jährlich neuer Urlaub hinzukommt.', 'bad'); form.elements.from.focus(); return false; }
+      if (v('to') && v('to') < v('from')) { toast('Der Austritt liegt vor dem Eintritt.', 'bad'); return false; }
+      const stand = toDn(v('standDate'));
+      if (isNaN(stand)) { toast('Bitte das Datum angeben, für das Resturlaub und Plus-/Minusstunden gelten (Stand per).', 'bad'); form.elements.standDate.focus(); return false; }
+      if (v('vacRest') === '' || isNaN(+v('vacRest'))) { toast('Bitte den Resturlaub per Stand eintragen (0 ist erlaubt).', 'bad'); form.elements.vacRest.focus(); return false; }
+      const allowed = $$('input[name=allowed]:checked', form).map(x => x.value);
+      if (!allowed.length) { toast('Mindestens ein Dienst muss erlaubt sein.', 'bad'); return false; }
+      const main = v('main');
+      const data = {
+        name, type: v('type'), weekly, days, vac: +v('vac') || 0,
+        main, alt: $$('input[name=alt]:checked', form).map(x => x.value).filter(x => x !== main),
+        allowed: allowed.length === S.shifts.length ? null : allowed,
+        offDays: $$('input[name=off]:checked', form).map(x => +x.value),
+        from: v('from'), to: v('to'), active: !(v('to') && toDn(v('to')) < todayDn()), trackFrom: fromDn(stand + 1),
+        balStart: +v('balStart') || 0, vacRest: +v('vacRest'), vacCarry: 0, vacUsedBefore: 0, note: v('note').trim(),
+      };
+      let removed = 0;
+      mutate(() => {
+        if (isNew) state.employees.push(newEmployee(data.type, data));
+        else Object.assign(getEmp(id), data);
+        if (data.to) removed = removeAfter(isNew ? state.employees[state.employees.length - 1].id : id, toDn(data.to));
+      });
+      toast(removed ? 'Gespeichert. ' + removed + ' Dienst(e) nach dem Austritt wurden entfernt.' : isNew ? 'Mitarbeiter angelegt' : 'Gespeichert');
+    },
+  });
+}
+ACTIONS['emp-delete'] = el => {
+  const e = getEmp(el.dataset.id);
+  closeModal();
+  confirmBox('„' + e.name + '“ mit allen Diensten und Abwesenheiten endgültig löschen? Für Mitarbeiter, die nur ausgeschieden sind, besser „Ausgeschieden“ verwenden, damit die Auswertungen erhalten bleiben.', 'Endgültig löschen', () => {
+    mutate(() => deleteEmployees([e.id]));
+    toast('Mitarbeiter gelöscht');
+  }, true);
+};
+ACTIONS['emp-deactivate'] = el => openExitDialog(el.dataset.id);
+function updateExitPreview(form) {
+  const e = getEmp(form.dataset.id), box = form.querySelector('#exitPreview'), d = toDn(form.elements.exit.value);
+  if (isNaN(d)) { box.hidden = true; return; }
+  const v = vacationSettlement(e, d);
+  box.hidden = false;
+  box.innerHTML = v ? settlementHtml(v, d) : 'Für dieses Datum ist noch keine Urlaubsberechnung möglich (vor Beginn der Aufzeichnung).';
+}
+CHANGE['exit-date'] = el => updateExitPreview(el.closest('form'));
+function openExitDialog(id) {
+  const e = getEmp(id);
+  if (!e) return;
+  closeModal();
+  openModal({
+    title: 'Austritt erfassen: ' + e.name, submitLabel: 'Austritt speichern', noFocus: true,
+    body: '<label class="fld">Austrittsdatum (letzter Arbeitstag)<input type="date" name="exit" value="' + esc(e.to || fromDn(todayDn())) + '" data-chg="exit-date" required></label>' +
+      '<p class="muted mt">Der Urlaub wird aliquot bis zu diesem Tag abgerechnet. Spätere Dienste und Abwesenheiten werden entfernt, die bisherigen Auswertungen bleiben erhalten. Liegt das Datum in der Zukunft, bleibt der Mitarbeiter bis dahin im Dienstplan.</p>' +
+      '<div class="note" id="exitPreview"></div>',
+    onMount: form => { form.dataset.id = id; updateExitPreview(form); },
+    onSubmit: form => {
+      const d = toDn(form.elements.exit.value);
+      if (isNaN(d)) { toast('Bitte das Austrittsdatum angeben.', 'bad'); return false; }
+      if (e.from && d < toDn(e.from)) { toast('Das Austrittsdatum liegt vor dem Eintritt.', 'bad'); return false; }
+      let removed = 0;
+      mutate(() => { const x = getEmp(id); x.to = fromDn(d); x.active = !(d < todayDn()); removed = removeAfter(id, d); });
+      toast('Austritt am ' + fmtDate(d) + ' gespeichert.' + (removed ? ' ' + removed + ' spätere(r) Dienst(e) wurden entfernt.' : '') + ' Die bisherigen Auswertungen bleiben erhalten.');
+    },
+  });
+}
+ACTIONS['emp-reactivate'] = el => {
+  const id = el.dataset.id;
+  closeModal();
+  mutate(() => { const e = getEmp(id); e.active = true; e.to = ''; });
+  toast('Wieder aktiv');
+};
+
+/* ---------- Eintritt und Stände aller Mitarbeiter auf einmal übernehmen ---------- */
+
+ACTIONS['stand-open'] = () => openStandDialog();
+function standRowHint(e, stand) {
+  const g = standGap(e, stand, todayDn());
+  return g && g.saldo <= -4 ? '<span class="minus">≈ ' + fmtSigned(g.saldo) + ' Std. ohne Dienste</span>' : '';
+}
+function openStandDialog() {
+  const list = state.employees.filter(e => !isInactive(e)).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  if (!list.length) { toast('Bitte zuerst Mitarbeiter anlegen.', 'bad'); return; }
+  const rows = list.map(e =>
+    '<tr><td><b>' + esc(e.name) + '</b><small>' + esc(e.type) + ' · ' + fmtNum(e.weekly, 1).replace(',0', '') + ' Std./Woche · ' + fmtDays(e.vac) + ' Urlaubstage</small></td>' +
+    '<td><input type="date" name="f_' + e.id + '" value="' + esc(e.from) + '"></td>' +
+    '<td><input type="date" name="d_' + e.id + '" value="' + fromDn(toDn(e.trackFrom) - 1) + '" data-chg="stand-row" data-id="' + e.id + '"></td>' +
+    '<td><input type="number" name="v_' + e.id + '" value="' + vacRestOf(e) + '" step="0.5"></td>' +
+    '<td><input type="number" name="h_' + e.id + '" value="' + (+e.balStart || 0) + '" step="0.25"></td>' +
+    '<td class="rowhint" id="sh_' + e.id + '">' + standRowHint(e, toDn(e.trackFrom) - 1) + '</td></tr>').join('');
+  openModal({
+    title: 'Eintritt und Stände bestehender Mitarbeiter übernehmen', wide: true, submitLabel: 'Übernehmen', noFocus: true,
+    body: '<p class="lead">Für jeden Mitarbeiter das Eintrittsdatum und den Stand laut bisheriger Aufzeichnung eintragen (z. B. letzte Lohnabrechnung). Am Jahrestag des Eintritts kommen jedes Jahr neu die Urlaubstage dazu. „Stand per“ ist der Tag, für den Resturlaub und Plus-/Minusstunden gelten; ab dem Tag danach rechnet das Programm weiter.</p>' +
+      '<div class="row2"><label>Gleiches Stand-Datum für alle<input type="date" id="standAll"></label><div class="alignend"><button type="button" class="btn" data-act="stand-all">Datum für alle übernehmen</button></div></div>' +
+      '<div class="tablewrap"><table class="list cfg"><thead><tr><th>Mitarbeiter</th><th>Eintritt</th><th>Stand per</th><th>Resturlaub (Tage)</th><th>Plus/Minus (Std.)</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="tip">Liegt der Stand weit zurück, müssen die Dienste seitdem im Dienstplan eingetragen sein, sonst entstehen Minusstunden (rot markiert). Am besten den Tag vor dem ersten Tag wählen, ab dem ihr das Programm nutzt.</p>',
+    onSubmit: form => {
+      const upd = [];
+      for (const e of list) {
+        const f = toDn(form.elements['f_' + e.id].value), d = toDn(form.elements['d_' + e.id].value), vr = form.elements['v_' + e.id].value, h = form.elements['h_' + e.id].value;
+        if (isNaN(f)) { toast('Bitte für ' + e.name + ' das Eintrittsdatum eintragen.', 'bad'); return false; }
+        if (isNaN(d)) { toast('Bitte für ' + e.name + ' das Datum „Stand per“ eintragen.', 'bad'); return false; }
+        if (vr === '' || isNaN(+vr)) { toast('Bitte für ' + e.name + ' den Resturlaub eintragen (0 ist erlaubt).', 'bad'); return false; }
+        upd.push({ id: e.id, from: fromDn(f), trackFrom: fromDn(d + 1), vacRest: +vr, balStart: +h || 0 });
+      }
+      mutate(() => { for (const u of upd) Object.assign(getEmp(u.id), { from: u.from, trackFrom: u.trackFrom, vacRest: u.vacRest, balStart: u.balStart, vacCarry: 0, vacUsedBefore: 0 }); });
+      toast('Eintritt und Stände von ' + upd.length + ' Mitarbeiter(n) übernommen');
+    },
+  });
+}
+ACTIONS['stand-all'] = el => {
+  const form = el.closest('form'), v = form.querySelector('#standAll').value;
+  if (isNaN(toDn(v))) { toast('Bitte zuerst das gemeinsame Datum wählen.', 'bad'); return; }
+  $$('input[name^="d_"]', form).forEach(inp => { inp.value = v; CHANGE['stand-row'](inp); });
+};
+CHANGE['stand-row'] = el => {
+  const e = getEmp(el.dataset.id), cell = $('#sh_' + el.dataset.id);
+  if (e && cell) cell.innerHTML = standRowHint(e, toDn(el.value));
+};
+
+/* ===== Oberfläche: Abwesenheiten (Urlaub, Krankenstand, Zeitausgleich) ===== */
+
+VIEWS.abs = function () {
+  const y = ui.absYear, ef = ui.absEmp;
+  const from = dnOf(y, 1, 1), to = dnOf(y, 12, 31);
+  const list = state.absences
+    .filter(a => (!ef || a.emp === ef) && getEmp(a.emp) && toDn(a.to) >= from && toDn(a.from) <= to)
+    .sort((a, b) => toDn(a.from) - toDn(b.from) || getEmp(a.emp).name.localeCompare(getEmp(b.emp).name, 'de'));
+  const rows = list.map(a => {
+    const e = getEmp(a.emp), f = toDn(a.from), t = toDn(a.to);
+    let days = 0;
+    for (const r of empDayRecords(e, f, t)) if (r.abs === a.type && ((a.type === 'urlaub' && r.vac) || (a.type === 'krank' && r.sick) || (a.type === 'za' && r.za) || (a.type === 'frei' && r.cat === 'frei'))) days++;
+    const cal = t - f + 1;
+    return '<tr class="click" data-act="abs-edit" data-id="' + a.id + '"><td><b>' + esc(e.name) + '</b></td><td><span class="abadge a-' + a.type + '">' + esc(ABS_TYPES[a.type]) + '</span></td>' +
+      '<td>' + WD_SHORT[wdOf(f)] + ' ' + fmtDate(f) + '</td><td>' + WD_SHORT[wdOf(t)] + ' ' + fmtDate(t) + '</td>' +
+      '<td class="r" title="' + cal + ' Kalendertage im Zeitraum">' + (a.type === 'frei' ? '–' : days) + '</td><td class="muted">' + esc(a.note || '') + '</td></tr>';
+  }).join('');
+  const yearOpts = []; for (let yy = ymd(todayDn()).y - 2; yy <= ymd(todayDn()).y + 2; yy++) yearOpts.push(opt(yy, yy, yy === y));
+  return '<div class="toolbar no-print"><div class="filters">' +
+    '<label>Jahr <select data-chg="abs-year">' + yearOpts.join('') + '</select></label>' +
+    '<label>Mitarbeiter <select data-chg="abs-emp">' + opt('', 'Alle', !ef) + state.employees.map(e => opt(e.id, e.name, e.id === ef)).join('') + '</select></label></div>' +
+    '<div class="tools"><button class="btn primary" data-act="abs-new">+ Abwesenheit eintragen</button></div></div>' +
+    '<section class="card"><h3>Urlaub, Krankenstand und Zeitausgleich</h3>' +
+    (rows ? '<div class="tablewrap"><table class="list"><thead><tr><th>Mitarbeiter</th><th>Art</th><th>Von</th><th>Bis</th><th class="r">Tage (angerechnet)</th><th>Notiz</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      : '<p class="muted pad">Für ' + y + ' sind keine Abwesenheiten eingetragen.</p>') +
+    '<p class="tip">Die automatische Planung teilt an diesen Tagen niemanden ein. Angerechnet werden nur Tage, an denen die Person laut Arbeitstagen pro Woche und freien Tagen gearbeitet hätte; Feiertage zählen nicht als Urlaub. Krankenstand und Urlaub werden mit den Tagesstunden gutgeschrieben, Zeitausgleich baut Plusstunden ab.</p></section>';
+};
+CHANGE['abs-year'] = el => { ui.absYear = +el.value; render(); };
+CHANGE['abs-emp'] = el => { ui.absEmp = el.value; render(); };
+ACTIONS['abs-new'] = () => openAbsEditor(null);
+ACTIONS['abs-edit'] = el => openAbsEditor(el.dataset.id);
+
+function openAbsEditor(id) {
+  if (!state.employees.length) { toast('Bitte zuerst Mitarbeiter anlegen.', 'bad'); return; }
+  const isNew = !id;
+  const a = isNew ? { emp: ui.absEmp || state.employees[0].id, from: fromDn(todayDn()), to: fromDn(todayDn()), type: 'urlaub', note: '' } : state.absences.find(x => x.id === id);
+  if (!a) return;
+  const empOpts = state.employees.filter(e => e.active !== false || e.id === a.emp).map(e => opt(e.id, e.name, e.id === a.emp)).join('');
+  const body =
+    '<div class="grid2">' +
+    '<label class="fld full">Mitarbeiter<select name="emp">' + (isNew ? opt('*', 'Alle Mitarbeiter (z. B. Betriebsurlaub)', false) : '') + empOpts + '</select></label>' +
+    '<label class="fld full">Art<select name="type">' + Object.keys(ABS_TYPES).map(t => opt(t, ABS_TYPES[t] + (t === 'frei' ? ' – Wunsch, ohne Gutschrift und ohne Urlaubsabzug' : ''), a.type === t)).join('') + '</select></label>' +
+    '<label class="fld">Von<input type="date" name="from" value="' + esc(a.from) + '" required></label>' +
+    '<label class="fld">Bis (einschließlich)<input type="date" name="to" value="' + esc(a.to) + '" required></label>' +
+    '<label class="fld full">Notiz (optional)<input type="text" name="note" value="' + esc(a.note || '') + '"></label></div>';
+  openModal({
+    title: isNew ? 'Abwesenheit eintragen' : 'Abwesenheit bearbeiten', body,
+    extraHtml: isNew ? '' : '<button type="button" class="btn danger ghost" data-act="abs-delete" data-id="' + a.id + '">Löschen</button>',
+    onSubmit: form => {
+      const f = toDn(form.from.value), t = toDn(form.to.value);
+      if (isNaN(f) || isNaN(t)) { toast('Bitte Beginn und Ende eintragen.', 'bad'); return false; }
+      if (t < f) { toast('Das Ende liegt vor dem Beginn.', 'bad'); return false; }
+      if (t - f > 366) { toast('Der Zeitraum darf höchstens ein Jahr umfassen.', 'bad'); return false; }
+      const type = form.type.value, note = form.note.value.trim();
+      const targets = form.emp.value === '*' ? state.employees.filter(e => e.active !== false).map(e => e.id) : [form.emp.value];
+      let removed = 0;
+      mutate(() => {
+        if (!isNew) {
+          state.absences = state.absences.filter(x => x.id !== id);
+          mergeAbsences(a.emp);
+        }
+        for (const emp of targets) {
+          // ältere Abwesenheiten im gleichen Zeitraum überschreiben (Tag für Tag)
+          for (let d = f; d <= t; d++) setAbsenceDay(emp, d, null);
+          state.absences.push({ id: uid('a'), emp, from: fromDn(f), to: fromDn(t), type, note });
+          mergeAbsences(emp);
+          if (type !== 'frei') removed += removeEntriesOf(emp, f, t);
+        }
+      });
+      toast(removed ? 'Gespeichert. ' + removed + ' bereits eingetragene(r) Dienst(e) in diesem Zeitraum wurden entfernt.' : 'Gespeichert');
+    },
+  });
+}
+ACTIONS['abs-delete'] = el => {
+  const id = el.dataset.id;
+  closeModal();
+  const a = state.absences.find(x => x.id === id);
+  mutate(() => { state.absences = state.absences.filter(x => x.id !== id); if (a) mergeAbsences(a.emp); });
+  toast('Abwesenheit gelöscht');
+};
+
+/* ===== Oberfläche: Monatsauswertung =====
+ * Je Mitarbeiter ein Blatt mit Beginn und Ende jedes Tages, am Ende eine Zusammenfassung
+ * mit Plus-/Minusstunden und Resturlaub. Gedruckt bzw. als PDF gespeichert wird im Querformat.
+ */
+
+function reportEmployees(y, m) {
+  const a = monthStart(y, m), b = monthEnd(y, m);
+  const order = new Map(state.settings.positions.map((p, i) => [p.id, i]));
+  return state.employees.filter(e => {
+    const s = monthStats(e, y, m);
+    if (!s.active) return false;
+    if (e.active !== false) return true;
+    return s.t.work > 0 || s.t.credit > 0;
+  }).sort((p, q) => (order.has(p.main) ? order.get(p.main) : 99) - (order.has(q.main) ? order.get(q.main) : 99) || p.name.localeCompare(q.name, 'de'));
+}
+
+const fmtPause = min => (min ? Math.floor(min / 60) + ':' + p2(min % 60) : '');
+
+function sheetHtml(e, y, m, s) {
+  let rows = '';
+  for (const r of s.recs) {
+    const wd = wdOf(r.dn), holiday = holidayName(r.dn);
+    const cls = [];
+    if (wd >= 5) cls.push('we');
+    if (holiday) cls.push('hd');
+    const label = WD_SHORT[wd] + ' ' + p2(ymd(r.dn).d) + '.';
+    if (!r.inWin) { rows += '<tr class="na"><td>' + label + '</td><td colspan="5">–</td></tr>'; continue; }
+    let von = '', bis = '', pause = '', std = '', note = '';
+    if (r.cat === 'work') {
+      const ens = r.entries.slice().sort((a, b) => parseHM(a.start) - parseHM(b.start));
+      von = ens.map(x => x.start).join(' / ');
+      bis = ens.map(x => x.end).join(' / ');
+      pause = fmtPause(ens.reduce((t, x) => t + (+x.pause || 0), 0));
+      std = fmtH(r.work);
+      const names = ens.map(x => (getPos(x.pos) || { name: '?' }).name).filter((n, i, a) => a.indexOf(n) === i);
+      note = names.join(', ') + (holiday ? ' · Feiertag' : '');
+    } else {
+      const map = { urlaub: 'Urlaub', krank: 'Krankenstand', za: 'Zeitausgleich', feiertag: 'Feiertag (Gutschrift)', ruhetag: 'Ruhetag' };
+      if (map[r.cat]) note = map[r.cat];
+      else if (r.cat === 'nocount') note = (ABS_TYPES[r.abs] || 'Abwesenheit') + ' (nicht angerechnet)';
+      else if (holiday) note = 'Feiertag';
+      else if (r.cat === 'frei') note = 'frei';
+      if (r.credit > 0) std = '(' + fmtH(r.credit) + ')';
+      else if (r.cat === 'za') std = '–';
+      if (r.cat === 'urlaub' || r.cat === 'krank' || r.cat === 'za' || r.cat === 'feiertag') cls.push('ab');
+    }
+    rows += '<tr class="' + cls.join(' ') + '"><td>' + label + '</td><td>' + esc(von) + '</td><td>' + esc(bis) + '</td><td>' + pause + '</td><td class="r">' + std + '</td><td class="nt">' + esc(note) + '</td></tr>';
+  }
+  const t = s.t;
+  let foot = '<tr class="sum"><td colspan="4">Gearbeitet (' + t.workDays + ' Tage)</td><td class="r">' + fmtH(t.work) + '</td><td></td></tr>';
+  if (t.credit > 0) {
+    const parts = [];
+    if (t.vacDays) parts.push(t.vacDays + ' Urlaub');
+    if (t.sickDays) parts.push(t.sickDays + ' Krank');
+    if (t.holDays) parts.push(t.holDays + ' Feiertag');
+    foot += '<tr class="sum"><td colspan="4">Gutschrift</td><td class="r">' + fmtH(t.credit) + '</td><td class="nt">' + parts.join(', ') + '</td></tr>';
+  }
+  return '<div class="sheet"><div class="sh-head"><div><b>' + esc(e.name) + '</b><span>' + esc(e.type) + ' · ' + fmtNum(e.weekly, 1).replace(',0', '') + ' Std./Woche</span></div><div class="sh-per">' + MONTHS[m - 1] + ' ' + y + '</div></div>' +
+    '<table><thead><tr><th>Tag</th><th>von</th><th>bis</th><th>Pause</th><th class="r">Std.</th><th>Vermerk</th></tr></thead><tbody>' + rows + '</tbody><tfoot>' + foot + '</tfoot></table></div>';
+}
+
+function summaryHtml(y, m, list) {
+  let tot = { soll: 0, work: 0, credit: 0, ist: 0, saldo: 0 };
+  const rows = list.map(e => {
+    const s = monthStats(e, y, m), t = s.t, v = s.vac;
+    for (const k in tot) tot[k] += t[k];
+    return '<tr><td><b>' + esc(e.name) + '</b><small>' + esc(e.type) + '</small></td><td class="r">' + fmtNum(e.weekly, 1).replace(',0', '') + '</td>' +
+      '<td class="r">' + fmtH(t.soll) + '</td><td class="r">' + fmtH(t.work) + '</td><td class="r">' + (t.credit ? fmtH(t.credit) : '–') + '</td><td class="r"><b>' + fmtH(t.ist) + '</b></td>' +
+      '<td class="r ' + saldoClass(t.saldo) + '"><b>' + fmtSigned(t.saldo) + '</b></td>' +
+      '<td class="r ' + saldoClass(s.acc.konto) + '"><b>' + fmtSigned(s.acc.konto) + '</b></td>' +
+      '<td class="r">' + (t.vacDays || '–') + '</td><td class="r">' + (t.sickDays || '–') + '</td>' +
+      '<td class="r">' + (v ? (v.final ? fmtDaysExact(v.entitlement + v.carry) : fmtDays(v.entitlement + v.carry)) + '<small>' + (v.final ? 'aliquot bis ' + fmtDM(v.endDay) : 'Jahr ab ' + fmtDM(v.yStart)) + '</small>' : '–') + '</td>' +
+      '<td class="r">' + (v ? (v.final ? fmtDaysExact(v.used) : fmtDays(v.used)) : '–') + '</td>' +
+      '<td class="r"><b>' + (v ? (v.final ? fmtDaysExact(v.rest) : fmtDays(v.rest)) : '–') + '</b>' +
+      (v && v.final ? '<small>' + (v.rest > 0.004 ? 'zur Auszahlung' : v.rest < -0.004 ? 'zu viel genommen' : 'aufgebraucht') + '</small>' : v && v.later ? '<small>' + fmtDays(v.later) + ' danach geplant</small>' : '') + '</td></tr>';
+  }).join('');
+  return '<table class="sum-table"><thead><tr><th rowspan="2">Mitarbeiter</th><th rowspan="2" class="r">Std./Woche</th>' +
+    '<th colspan="5" class="grp">Arbeitszeit im Monat (Std.)</th><th rowspan="2" class="r">Zeitkonto gesamt (Std.)</th>' +
+    '<th colspan="2" class="grp">Tage im Monat</th><th colspan="3" class="grp">Urlaub im Urlaubsjahr (Tage)</th></tr>' +
+    '<tr><th class="r">Soll</th><th class="r">Gearbeitet</th><th class="r">Gutschrift</th><th class="r">Ist</th><th class="r">Plus / Minus</th>' +
+    '<th class="r">Urlaub</th><th class="r">Krank</th><th class="r">Anspruch inkl. Übertrag</th><th class="r">Genommen</th><th class="r">Resturlaub</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody><tfoot><tr><td>Summe</td><td></td><td class="r">' + fmtH(tot.soll) + '</td><td class="r">' + fmtH(tot.work) + '</td><td class="r">' + fmtH(tot.credit) + '</td><td class="r">' + fmtH(tot.ist) + '</td><td class="r ' + saldoClass(tot.saldo) + '">' + fmtSigned(tot.saldo) + '</td><td colspan="6"></td></tr></tfoot></table>' +
+    '<div class="notes"><b>So wird gerechnet:</b> Soll = Wochenstunden × Kalendertage des Monats ÷ 7. Gearbeitet = Dienste von–bis abzüglich Pause. ' +
+    'Gutschrift = Urlaub, Krankenstand und Feiertag/Betriebsruhe mit den Stunden eines durchschnittlichen Arbeitstages (Wochenstunden ÷ Arbeitstage pro Woche). ' +
+    'Ist = Gearbeitet + Gutschrift. Plus/Minus = Ist − Soll. Zeitkonto gesamt = Startsaldo + Plus/Minus seit Beginn der Aufzeichnung. ' +
+    'Urlaubsjahr = ab dem Jahrestag des Eintritts; an diesem Tag wird der Jahresanspruch neu gutgeschrieben. ' +
+    'Resturlaub = Anspruch + Übertrag − genommene Urlaubstage (bis Monatsende); bereits danach geplante Urlaubstage sind gesondert ausgewiesen. ' +
+    'Beim Austritt gilt der Anspruch des letzten Urlaubsjahres aliquot (Tage des Arbeitsverhältnisses ÷ Tage des Urlaubsjahres × Jahresanspruch).</div>' + exitBlockHtml(y, m, list);
+}
+
+// Urlaubsabrechnung der Mitarbeiter, die in diesem Monat ausscheiden
+function exitBlockHtml(y, m, list) {
+  const a = monthStart(y, m), b = monthEnd(y, m);
+  const rows = list.filter(e => e.to && toDn(e.to) >= a && toDn(e.to) <= b).map(e => {
+    const ex = toDn(e.to), v = vacationInfo(e, ex);
+    if (!v) return '';
+    const res = v.rest;
+    return '<tr><td><b>' + esc(e.name) + '</b></td><td>' + fmtDate(ex) + '</td><td>' + fmtDate(v.yStart) + ' – ' + fmtDate(v.yEnd) + '</td><td class="r">' + fmtDays(v.fullEntitlement) + '</td>' +
+      '<td class="r">' + v.daysWorked + ' / ' + v.daysInYear + '</td><td class="r"><b>' + fmtDaysExact(v.entitlement) + '</b></td><td class="r">' + fmtDaysExact(v.carry) + '</td><td class="r">' + fmtDaysExact(v.used) + '</td>' +
+      '<td class="r ' + (res > 0.004 ? 'plus' : res < -0.004 ? 'minus' : 'zero') + '"><b>' + (res > 0.004 ? fmtDaysExact(res) + ' Tage zur Auszahlung' : res < -0.004 ? fmtDaysExact(-res) + ' Tage zu viel genommen' : 'aufgebraucht') + '</b></td></tr>';
+  }).join('');
+  if (!rows) return '';
+  return '<h3 class="exit-h">Austritte in diesem Monat: Urlaubsabrechnung</h3>' +
+    '<table class="sum-table exit"><thead><tr><th>Mitarbeiter</th><th>Austritt</th><th>Urlaubsjahr</th><th class="r">Jahresanspruch</th><th class="r">Tage im Urlaubsjahr</th><th class="r">Anspruch aliquot</th><th class="r">Übertrag Vorjahre</th><th class="r">Genommen</th><th class="r">Ergebnis</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<div class="notes">Anspruch aliquot = Jahresanspruch × Tage des Arbeitsverhältnisses im Urlaubsjahr ÷ Tage des Urlaubsjahres. Ergebnis = Übertrag + Anspruch aliquot − genommen. Rundung und rechtliche Prüfung bitte mit der Lohnverrechnung abstimmen.</div>';
+}
+
+VIEWS.report = function () {
+  const { y, m } = ui.month, S = state.settings;
+  const list = reportEmployees(y, m);
+  const bar = '<div class="toolbar no-print">' + monthNavHtml() +
+    '<div class="tools"><button class="btn primary" data-act="print">Drucken / Als PDF speichern</button></div></div>';
+  if (!list.length) return bar + '<section class="card"><p class="muted pad">Für ' + MONTHS[m - 1] + ' ' + y + ' liegen keine Daten vor. Mitarbeiter werden erst ab dem Tag nach ihrem „Stand per“ ausgewertet (siehe Mitarbeiter → Stände übernehmen).</p></section>';
+  const created = fmtDate(todayDn());
+  const head = '<div class="rp-head"><div><b>' + esc(S.name) + '</b> · Monatsauswertung ' + MONTHS[m - 1] + ' ' + y + '</div><div>Erstellt am ' + created + '</div></div>';
+  const stats = new Map(list.map(e => [e.id, monthStats(e, y, m)]));
+  let pages = '';
+  for (let i = 0; i < list.length; i += 2) {
+    pages += '<section class="rpage">' + head + '<div class="sheets">' + list.slice(i, i + 2).map(e => sheetHtml(e, y, m, stats.get(e.id))).join('') + '</div></section>';
+  }
+  pages += '<section class="rpage summary">' + head + '<h2>Zusammenfassung ' + MONTHS[m - 1] + ' ' + y + '</h2>' + summaryHtml(y, m, list) + '</section>';
+  return bar + '<div class="report">' + pages + '</div>';
+};
+
+/* ===== Oberfläche: Einstellungen ===== */
+
+const netLabel = sh => { const h = netHours(sh.start, sh.end, sh.pause); return h > 0 ? fmtH(h) + ' Std.' : '–'; };
+
+function secBetrieb() {
+  const S = state.settings;
+  return '<section class="card"><h3>Betrieb</h3><div class="grid2">' +
+    '<label class="fld">Name des Restaurants<input type="text" value="' + esc(S.name) + '" data-chg="set-name" data-key="set-name"></label>' +
+    '<div class="fld">Öffnungstage<div class="chks">' + WD_SHORT.map((d, k) => '<label class="chk sm"><input type="checkbox" data-chg="set-open" data-k="' + k + '"' + (S.openDays[k] ? ' checked' : '') + '>' + d + '</label>').join('') +
+    '</div><small>Nicht angekreuzte Tage sind Ruhetage. Dort wird nicht geplant.</small></div></div></section>';
+}
+function secPositions() {
+  const S = state.settings;
+  return '<section class="card"><h3>Positionen</h3><div class="rowset">' + S.positions.map(p =>
+    '<div class="rs"><input type="color" value="' + p.color + '" data-chg="pos-color" data-id="' + p.id + '" aria-label="Farbe">' +
+    '<input type="text" value="' + esc(p.name) + '" data-chg="pos-name" data-id="' + p.id + '" data-key="pos-' + p.id + '" aria-label="Name der Position">' +
+    '<button class="icon-btn" data-act="pos-del" data-id="' + p.id + '" aria-label="Position löschen" title="Position löschen">✕</button></div>').join('') + '</div>' +
+    '<button class="btn sm" data-act="pos-add">+ Position hinzufügen</button>' +
+    '<p class="tip">Jede Position wird an jedem Öffnungstag besetzt (siehe Mindestbesetzung). Positionen, die noch verwendet werden, lassen sich nicht löschen, aber umbenennen.</p></section>';
+}
+function secShifts() {
+  const S = state.settings;
+  const head = '<thead><tr><th>Bezeichnung</th><th>von</th><th>bis</th><th>Pause (Min.)</th><th>Zählt für</th><th class="r">Arbeitszeit</th><th></th></tr></thead>';
+  const rows = S.shifts.map(s =>
+    '<tr><td><input type="text" value="' + esc(s.name) + '" data-chg="sh-field" data-f="name" data-id="' + s.id + '" data-key="sh-name-' + s.id + '"></td>' +
+    '<td><input type="time" value="' + esc(s.start) + '" data-chg="sh-field" data-f="start" data-id="' + s.id + '"></td>' +
+    '<td><input type="time" value="' + esc(s.end) + '" data-chg="sh-field" data-f="end" data-id="' + s.id + '"></td>' +
+    '<td><input type="number" min="0" max="600" step="5" value="' + (+s.pause || 0) + '" data-chg="sh-field" data-f="pause" data-id="' + s.id + '"></td>' +
+    '<td><select data-chg="sh-field" data-f="covers" data-id="' + s.id + '">' + opt('F', 'Früh-Hälfte', s.covers === 'F') + opt('S', 'Spät-Hälfte', s.covers === 'S') + opt('FS', 'Früh + Spät (durchgehend)', s.covers === 'FS') + '</select></td>' +
+    '<td class="r">' + netLabel(s) + '</td><td><button class="icon-btn" data-act="sh-del" data-id="' + s.id + '" aria-label="Dienst löschen" title="Dienst löschen">✕</button></td></tr>').join('');
+  return '<section class="card"><h3>Dienste</h3><div class="tablewrap"><table class="list cfg">' + head + '<tbody>' + rows + '</tbody></table></div>' +
+    '<button class="btn sm" data-act="sh-add">+ Dienst hinzufügen</button>' +
+    '<p class="tip">„Zählt für“ legt fest, welche Tageshälfte ein Dienst bei der Mindestbesetzung abdeckt. Ein durchgehender Dienst deckt Früh und Spät ab. Endet ein Dienst nach Mitternacht, einfach die Endzeit (z. B. 01:00) eintragen. Änderungen gelten für neu geplante Dienste; bereits eingeteilte Dienste bleiben unverändert.</p></section>';
+}
+function secReq() {
+  const S = state.settings;
+  let head = '<th>Position</th>';
+  for (let k = 0; k < 7; k++) head += '<th class="' + (S.openDays[k] ? '' : 'off') + '">' + WD_SHORT[k] + '</th>';
+  const rows = S.positions.map(p => {
+    let tds = '';
+    for (let k = 0; k < 7; k++) {
+      const r = S.req[p.id][k];
+      tds += '<td class="' + (S.openDays[k] ? '' : 'off') + '"><div class="fs">' +
+        '<label title="Mindestens so viele Personen in der Früh-Hälfte">F<input type="number" min="0" max="20" value="' + r[0] + '" data-chg="req" data-p="' + p.id + '" data-k="' + k + '" data-s="0"></label>' +
+        '<label title="Mindestens so viele Personen in der Spät-Hälfte">S<input type="number" min="0" max="20" value="' + r[1] + '" data-chg="req" data-p="' + p.id + '" data-k="' + k + '" data-s="1"></label></div></td>';
+    }
+    return '<tr><th><i class="pdot" style="background:' + p.color + '"></i>' + esc(p.name) + '</th>' + tds + '</tr>';
+  }).join('');
+  return '<section class="card"><h3>Mindestbesetzung</h3><div class="tablewrap"><table class="list reqt"><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '<div class="grid2 mt"><label class="fld">Mindestens so viele Personen pro Öffnungstag<input type="number" min="1" max="50" value="' + S.minPersons + '" data-chg="set-minp"></label></div>' +
+    '<p class="tip">F = Früh-Hälfte, S = Spät-Hälfte des Tages. Beispiel: „Service F1 S1“ heißt, tagsüber und abends muss jeweils mindestens eine Person im Service sein. Ein durchgehender Dienst zählt für beides. Bei 4 Positionen mit je 1 ergeben sich mindestens 4 Personen pro Tag. Für Stoßzeiten (z. B. Samstag) die Zahl erhöhen.</p></section>';
+}
+function secRules() {
+  const S = state.settings;
+  return '<section class="card"><h3>Planungsregeln</h3><div class="grid2">' +
+    '<label class="fld">Mindestruhezeit zwischen zwei Diensten (Std.)<input type="number" min="0" max="16" step="0.5" value="' + S.minRestH + '" data-chg="set-rest"><small>Gesetzlicher Regelwert: 11 Stunden. Kollektivvertrag beachten.</small></label>' +
+    '<label class="fld">Höchstens so viele Arbeitstage in Folge<input type="number" min="1" max="7" value="' + S.maxConsec + '" data-chg="set-consec"></label>' +
+    '<label class="chk"><input type="checkbox" data-chg="set-fair"' + (S.fairWeekends !== false ? ' checked' : '') + '> Wochenenden möglichst fair verteilen</label></div></section>';
+}
+function secHolidays() {
+  const S = state.settings, y = ui.holYear;
+  const yearOpts = []; for (let yy = ymd(todayDn()).y - 1; yy <= ymd(todayDn()).y + 3; yy++) yearOpts.push(opt(yy, yy, yy === y));
+  const hol = holidaysAT(y).list.map(h => '<tr><td>' + WD_SHORT[wdOf(h.dn)] + ' ' + fmtDate(h.dn) + '</td><td>' + esc(h.name) + '</td>' +
+    '<td><label class="chk sm"><input type="checkbox" data-chg="hol-closed" data-iso="' + fromDn(h.dn) + '"' + (S.closedHolidays[fromDn(h.dn)] ? ' checked' : '') + '> Restaurant geschlossen</label></td></tr>').join('');
+  const clos = S.closures.slice().sort((a, b) => toDn(a.from) - toDn(b.from)).map(c =>
+    '<tr><td>' + fmtDate(toDn(c.from)) + ' – ' + fmtDate(toDn(c.to)) + '</td><td>' + esc(c.note || 'Betriebsruhe') + '</td><td><button class="icon-btn" data-act="clos-del" data-id="' + c.id + '" aria-label="Löschen">✕</button></td></tr>').join('');
+  return '<section class="card"><h3>Feiertage und Betriebsruhe</h3>' +
+    '<div class="fld inline"><label>Feiertage in <select data-chg="hol-year">' + yearOpts.join('') + '</select></label></div>' +
+    '<div class="tablewrap"><table class="list cfg"><tbody>' + hol + '</tbody></table></div>' +
+    '<h4>Betriebsruhe / Betriebsurlaub</h4>' +
+    (clos ? '<div class="tablewrap"><table class="list cfg"><tbody>' + clos + '</tbody></table></div>' : '<p class="muted">Keine Betriebsruhe eingetragen.</p>') +
+    '<button class="btn sm" data-act="clos-add">+ Betriebsruhe eintragen</button>' +
+    '<p class="tip">An geschlossenen Tagen wird nicht geplant. Die Mitarbeiter erhalten dafür eine Stundengutschrift, damit keine Minusstunden entstehen. Soll die Betriebsruhe vom Urlaub abgezogen werden, zusätzlich unter „Abwesenheiten“ Urlaub für alle Mitarbeiter eintragen. Gesetzliche Feiertage werden nie als Urlaub gezählt.</p></section>';
+}
+function secData() {
+  let fs;
+  if (!fsApi.supported) {
+    fs = '<p class="note warn">Dieser Browser (z. B. Firefox oder Safari) kann keinen Datenordner verwenden. Für die dauerhafte Speicherung im Ordner bitte Chrome oder Edge benutzen. Bis dahin liegen die Daten nur im Browser: bitte regelmäßig „Sicherung herunterladen“.</p>';
+  } else if (fsApi.dir) {
+    const st = fsApi.conflict ? 'Der Ordner enthält abweichende Daten, bitte klären.' : fsApi.ok ? 'Jede Änderung wird automatisch dort gespeichert.' : 'Zurzeit nicht verbunden. Änderungen werden nur im Browser gespeichert, bis die Verbindung wieder erlaubt ist.';
+    fs = '<h4>Datenordner</h4><p>Ordner: <b>„' + esc(fsApi.name) + '“</b>. ' + st + '</p>' +
+      '<p class="muted">Im Ordner liegt die Datei <code>' + DATA_FILE + '</code> und im Unterordner <code>' + BACKUP_DIR + '</code> je Arbeitstag eine Sicherungskopie (die letzten ' + KEEP_BACKUPS + ').</p>' +
+      '<div class="row-btns">' +
+      (fsApi.conflict ? '<button class="btn primary" data-act="fs-resolve">Abweichung klären …</button>' : !fsApi.ok ? '<button class="btn primary" data-act="fs-reconnect">Wieder verbinden</button>' : '<button class="btn" data-act="fs-reload">Jetzt aus dem Ordner neu laden</button>') +
+      '<button class="btn" data-act="fs-connect">Anderen Ordner wählen …</button><button class="btn" data-act="fs-disconnect">Verbindung trennen</button></div>';
+  } else {
+    fs = '<h4>Datenordner (empfohlen)</h4><p>Die Daten in einem eigenen Ordner auf dem Computer speichern statt nur im Browser. Darin liegen eine normale Datei mit allen Daten und automatische tägliche Sicherungskopien. Am besten zuerst einen neuen Ordner anlegen (z. B. „Dienstplan-Daten“ in „Dokumente“) und den dann auswählen. Bereits eingegebene Daten werden übernommen.</p>' +
+      '<div class="row-btns"><button class="btn primary" data-act="fs-connect">Datenordner wählen …</button></div>';
+  }
+  return '<section class="card"><h3>Daten und Sicherung</h3>' +
+    '<p>Alle Daten bleiben auf diesem Computer, nichts wird ins Internet übertragen. Ohne Datenordner liegen sie nur im Speicher dieses Browsers und sind weg, wenn dieser gelöscht oder ein anderer Browser benutzt wird.</p>' +
+    fs +
+    '<p><b>Umzug auf einen anderen Computer:</b> Den ganzen Datenordner kopieren (oder in einem Cloud-Ordner ablegen), am neuen Computer die Dienstplan.html öffnen und „Datenordner wählen …“ auswählen. Nicht gleichzeitig auf zwei Computern arbeiten: bei einem Abgleich gilt jeweils der neuere Stand, und es wird vorher gefragt.</p>' +
+    '<h4>Sicherung als Einzeldatei (geht in jedem Browser)</h4>' +
+    '<div class="row-btns"><button class="btn" data-act="backup">Sicherung herunterladen</button>' +
+    '<label class="btn">Sicherung laden …<input type="file" accept=".json,application/json" hidden data-chg="restore-file"></label></div>' +
+    '<h4>Sonstiges</h4><div class="row-btns"><button class="btn danger ghost" data-act="reset-all">Alle Daten löschen</button></div></section>';
+}
+
+VIEWS.set = function () {
+  return '<div class="settings">' + secBetrieb() + secPositions() + secShifts() + secReq() + secRules() + secHolidays() + secData() + '</div>';
+};
+
+/* ---------- Änderungen ---------- */
+
+CHANGE['set-name'] = el => mutate(() => { state.settings.name = el.value.trim() || COMPANY_NAME; });
+CHANGE['set-open'] = el => mutate(() => { state.settings.openDays[+el.dataset.k] = el.checked; });
+CHANGE['set-minp'] = el => mutate(() => { state.settings.minPersons = clamp(Math.round(+el.value || 1), 1, 50); });
+CHANGE['set-rest'] = el => mutate(() => { state.settings.minRestH = clamp(+el.value || 0, 0, 16); });
+CHANGE['set-consec'] = el => mutate(() => { state.settings.maxConsec = clamp(Math.round(+el.value || 6), 1, 7); });
+CHANGE['set-fair'] = el => mutate(() => { state.settings.fairWeekends = el.checked; });
+CHANGE['hol-year'] = el => { ui.holYear = +el.value; render(); };
+CHANGE['hol-closed'] = el => mutate(() => { if (el.checked) state.settings.closedHolidays[el.dataset.iso] = true; else delete state.settings.closedHolidays[el.dataset.iso]; });
+CHANGE.req = el => mutate(() => { state.settings.req[el.dataset.p][+el.dataset.k][+el.dataset.s] = clamp(Math.round(+el.value || 0), 0, 20); });
+
+CHANGE['pos-color'] = el => mutate(() => { getPos(el.dataset.id).color = el.value; });
+CHANGE['pos-name'] = el => mutate(() => { getPos(el.dataset.id).name = el.value.trim() || 'Position'; });
+ACTIONS['pos-add'] = () => {
+  const id = uid('pos_');
+  mutate(() => {
+    const S = state.settings;
+    S.positions.push({ id, name: 'Neue Position', color: POS_COLORS[S.positions.length % POS_COLORS.length] });
+    ensureReq(S);
+  });
+  const el = $('[data-key="pos-' + id + '"]');
+  if (el) { el.focus(); el.select(); }
+};
+ACTIONS['pos-del'] = el => {
+  const id = el.dataset.id, S = state.settings;
+  const used = state.employees.some(e => e.main === id || (e.alt || []).indexOf(id) >= 0) || Object.keys(state.plan).some(d => state.plan[d].some(en => en.pos === id));
+  if (used) { toast('Diese Position wird noch von Mitarbeitern oder in Diensten verwendet und kann nicht gelöscht werden. Sie lässt sich aber umbenennen.', 'bad'); return; }
+  if (S.positions.length <= 1) { toast('Mindestens eine Position ist nötig.', 'bad'); return; }
+  mutate(() => { S.positions = S.positions.filter(p => p.id !== id); delete S.req[id]; });
+};
+
+CHANGE['sh-field'] = el => {
+  const sh = getShift(el.dataset.id), f = el.dataset.f;
+  let val = el.value;
+  if (f === 'name') val = val.trim() || 'Dienst';
+  else if (f === 'pause') val = clamp(Math.round(+val || 0), 0, 600);
+  else if (f === 'start' || f === 'end') { if (isNaN(parseHM(val))) { render(); return; } }
+  const test = Object.assign({}, sh, { [f]: val });
+  if (f === 'start' || f === 'end' || f === 'pause') {
+    const net = netHours(test.start, test.end, test.pause);
+    if (test.start === test.end) { toast('Beginn und Ende dürfen nicht gleich sein.', 'bad'); render(); return; }
+    if (!(net > 0)) { toast('Beginn, Ende und Pause ergeben keine positive Arbeitszeit.', 'bad'); render(); return; }
+    if (net > 16) { toast('Ein Dienst von mehr als 16 Stunden ist nicht zulässig.', 'bad'); render(); return; }
+  }
+  mutate(() => { sh[f] = val; });
+};
+ACTIONS['sh-add'] = () => {
+  const id = uid('sh_');
+  mutate(() => { state.settings.shifts.push({ id, name: 'Neuer Dienst', start: '12:00', end: '18:00', pause: 30, covers: 'F' }); });
+  const el = $('[data-key="sh-name-' + id + '"]');
+  if (el) { el.focus(); el.select(); }
+};
+ACTIONS['sh-del'] = el => {
+  const S = state.settings;
+  if (S.shifts.length <= 1) { toast('Mindestens ein Dienst ist nötig.', 'bad'); return; }
+  const id = el.dataset.id;
+  mutate(() => {
+    S.shifts = S.shifts.filter(s => s.id !== id);
+    state.employees.forEach(e => { if (e.allowed) { e.allowed = e.allowed.filter(x => x !== id); if (!e.allowed.length) e.allowed = null; } });
+  });
+};
+
+ACTIONS['clos-add'] = () => openModal({
+  title: 'Betriebsruhe eintragen',
+  body: '<div class="grid2"><label class="fld">Von<input type="date" name="from" required></label><label class="fld">Bis (einschließlich)<input type="date" name="to" required></label>' +
+    '<label class="fld full">Bezeichnung<input type="text" name="note" placeholder="z. B. Betriebsurlaub Sommer" value="Betriebsurlaub"></label></div>',
+  onSubmit: form => {
+    const f = toDn(form.from.value), t = toDn(form.to.value);
+    if (isNaN(f) || isNaN(t) || t < f) { toast('Bitte einen gültigen Zeitraum eintragen.', 'bad'); return false; }
+    mutate(() => { state.settings.closures.push({ id: uid('c'), from: fromDn(f), to: fromDn(t), note: form.note.value.trim() || 'Betriebsruhe' }); });
+  },
+});
+ACTIONS['clos-del'] = el => mutate(() => { state.settings.closures = state.settings.closures.filter(c => c.id !== el.dataset.id); });
+
+/* ---------- Daten ---------- */
+
+CHANGE['restore-file'] = el => {
+  const f = el.files && el.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => restoreFromText(String(r.result));
+  r.readAsText(f);
+  el.value = '';
+};
+ACTIONS['fs-connect'] = () => fsConnect();
+ACTIONS['fs-disconnect'] = () => fsDisconnect();
+ACTIONS['fs-reload'] = () => fsSync(true);
+ACTIONS['fs-resolve'] = () => fsConflictPrompt();
+ACTIONS['fs-adopt'] = () => { closeModal(); fsAdoptFolder(); };
+ACTIONS['fs-overwrite'] = () => { closeModal(); fsOverwriteFolder(); };
+ACTIONS['reset-all'] = () => confirmBox('Wirklich ALLE Daten (Mitarbeiter, Pläne, Einstellungen) löschen? Ist ein Datenordner verbunden, wird der bisherige Stand dort im Unterordner „Sicherungen“ aufgehoben.', 'Alles löschen', () => {
+  fsSafetyCopy('vor-Loeschen');
+  pushUndo();
+  state = defaultState();
+  afterChange();
+  toast('Alle Daten gelöscht');
+}, true);
+
+/* ===== Start ===== */
+
+(function init() {
+  loadMeta();
+  state = loadFromStorage() || defaultState();
+  touch();
+  let storageOk = true;
+  try { localStorage.setItem('dienstplan.test', '1'); localStorage.removeItem('dienstplan.test'); } catch (e) { storageOk = false; }
+  render();
+  if (!storageOk) toast('Der Browser erlaubt kein Speichern (privates Fenster?). Bitte ein normales Fenster verwenden oder regelmäßig eine Sicherung herunterladen.', 'bad');
+  fsInit();
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* egal */ }
+})();
+
+// Muster-Mitarbeiter aus früheren Versionen (Beispieldaten) auf Wunsch entfernen
+function offerSampleCleanup() {
+  if (meta.sampleIgnored || $('#modal-root').firstChild) return;
+  const list = legacySampleEmployees();
+  if (!list.length) return;
+  openModal({
+    title: 'Muster-Mitarbeiter entfernen', noFocus: true, danger: true, submitLabel: 'Muster-Mitarbeiter entfernen',
+    body: '<p class="confirm-text">In den gespeicherten Daten befinden sich noch Muster-Mitarbeiter aus den früheren Beispieldaten:</p>' +
+      '<p><b>' + list.map(e => esc(e.name)).join(', ') + '</b></p>' +
+      '<p class="muted">Sie werden samt ihren Diensten und Urlauben vollständig entfernt. Alle anderen Mitarbeiter bleiben unverändert.</p>',
+    extraHtml: '<button type="button" class="btn ghost" data-act="sample-ignore">Nicht mehr fragen</button>',
+    onSubmit: () => { mutate(() => deleteEmployees(list.map(e => e.id))); toast(list.length + ' Muster-Mitarbeiter entfernt'); },
+  });
+}
+ACTIONS['sample-ignore'] = () => { meta.sampleIgnored = true; saveMeta(); closeModal(); };
+setTimeout(offerSampleCleanup, 250);
+
+window.addEventListener('error', ev => { console.error(ev.error || ev.message); });
+
+</script>
+</body>
+</html>

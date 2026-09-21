@@ -1,0 +1,85 @@
+DIENSTPLAN – Kurzanleitung
+==========================
+
+STARTEN
+  Die Datei "Dienstplan.html" doppelklicken. Sie öffnet sich im Browser (Chrome, Edge, Safari, Firefox)
+  und läuft vollständig lokal auf Mac und Windows. Es wird nichts installiert und nichts ins Internet
+  übertragen.
+
+ERSTE SCHRITTE
+  1. Mitarbeiter:   "+ Mitarbeiter": Name, Anstellungsart, Wochenstunden (Normalarbeitszeit),
+                    Arbeitstage pro Woche, Urlaubsanspruch, Eintrittsdatum (Pflicht), Position.
+                    Bestehende Mitarbeiter: unter "Übernahme bisheriger Stände" den Stand laut bisheriger
+                    Aufzeichnung eintragen: "Stand per" (Datum), Resturlaub in Tagen und Plus-/Minusstunden.
+                    Die Werte gelten am Ende dieses Tages, ab dem Folgetag rechnet das Programm weiter.
+                    Für alle Mitarbeiter auf einmal (mit Eintrittsdatum): Mitarbeiter > "Stände & Eintritt übernehmen ...".
+                    Jederzeit änderbar. Tipp: den Stand auf den Tag vor dem ersten Programmtag legen (z. B.
+                    Monatsende laut Lohnabrechnung), sonst entstehen für die Tage dazwischen Minusstunden.
+  2. Einstellungen: Öffnungstage (Standard: Montag Ruhetag), Dienstzeiten (Früh / Spät / Durchgehend),
+                    Mindestbesetzung je Position, Feiertage, Betriebsruhe. Bitte einmal prüfen und anpassen.
+  3. Dienstplan:    "Automatisch planen ..." erstellt Woche, Monat oder einen beliebigen Zeitraum.
+  4. Ändern:        Klick auf ein Feld: Dienst ändern, Frei, Urlaub, Krank, Zeitausgleich.
+                    Manuell geänderte Dienste (Punkt im Feld) bleiben bei einer neuen Planung erhalten.
+  5. Abwesenheiten: Urlaub, Krankenstand, Zeitausgleich für mehrere Tage oder für alle (Betriebsurlaub).
+  6. Auswertung:    Monat wählen, "Drucken / Als PDF speichern". Je Mitarbeiter ein Blatt mit von/bis je Tag,
+                    am Ende die Zusammenfassung mit Plus-/Minusstunden und Resturlaub.
+
+MITARBEITER: AUSTRITT UND ENTFERNEN
+  Mitarbeiter > auf die Zeile des Mitarbeiters klicken > unten links:
+  - "Austritt erfassen ...": Austrittsdatum (letzter Arbeitstag) eintragen. Der Urlaub wird aliquot bis zu diesem
+    Tag abgerechnet (Vorschau im Fenster). Spätere Dienste werden entfernt, bisherige Stunden und Auswertungen
+    bleiben erhalten. Liegt das Datum in der Zukunft, bleibt der Mitarbeiter bis dahin im Dienstplan.
+    Das Austrittsdatum lässt sich auch direkt in den Stammdaten eintragen.
+  - "Löschen": entfernt die Person mit allen Diensten und Abwesenheiten endgültig.
+
+URLAUB
+  - Urlaubsjahr = ab dem Jahrestag des Eintritts. An diesem Tag wird der Jahresanspruch (z. B. 25 Tage) automatisch
+    neu gutgeschrieben, ein nicht verbrauchter Rest wird übertragen.
+  - Beim Austritt gilt der Anspruch des letzten Urlaubsjahres aliquot:
+    Jahresanspruch x Tage des Arbeitsverhältnisses im Urlaubsjahr / Tage des Urlaubsjahres.
+    Ergebnis = Übertrag + Anspruch aliquot - genommene Tage. Positiv = zur Auszahlung (Urlaubsersatzleistung),
+    negativ = mehr genommen als zusteht. Die Monatsauswertung weist Austritte in einem eigenen Abschnitt aus.
+    Rundung und rechtliche Prüfung bitte mit der Lohnverrechnung abstimmen.
+
+WAS DAS PROGRAMM BEACHTET
+  - Jede Position (Pizzakoch, Küche, Service, Abwasch) ist an jedem Öffnungstag früh und spät besetzt,
+    dadurch sind mindestens 4 Personen pro Tag im Dienst.
+  - Wochenstunden je Mitarbeiter, Urlaub/Krankenstand, feste freie Tage, Ruhezeit zwischen Diensten,
+    Höchstzahl Arbeitstage in Folge, faire Wochenenden.
+  - Reicht das Personal nicht, wird trotzdem geplant und die Lücke unter "Hinweise" angezeigt.
+
+SO WIRD GERECHNET
+  Soll     = Wochenstunden x Kalendertage / 7
+  Ist      = gearbeitete Stunden (von-bis abzüglich Pause) + Gutschrift
+  Gutschrift = Urlaub, Krankenstand, Feiertag/Betriebsruhe mit einem Durchschnittstag (Wochenstunden / Arbeitstage)
+  Plus/Minus = Ist - Soll;  Zeitkonto = Startsaldo + Plus/Minus seit Beginn
+  Resturlaub = Anspruch + Übertrag - genommene Urlaubstage (im Urlaubsjahr ab Eintritts-Jahrestag).
+  Gesetzliche Feiertage zählen nie als Urlaub.
+  Wochenenden und Feiertage werden wie jeder andere Tag gerechnet (1:1, keine Zuschläge oder Faktoren).
+
+DATEN SPEICHERN UND SICHERN (WICHTIG)
+  Ohne Datenordner liegen die Daten nur im Speicher des Browsers und sind weg, wenn dieser gelöscht oder ein
+  anderer Browser benutzt wird. Deshalb einmal einrichten (nur Chrome oder Edge):
+  - Einstellungen > "Datenordner wählen ...". Am besten vorher einen neuen Ordner anlegen (z. B. "Dienstplan-Daten"
+    in "Dokumente") und diesen auswählen. Schon eingegebene Daten werden übernommen.
+  - Ab dann wird jede Änderung automatisch in die Datei "Dienstplan-Daten.json" im Ordner geschrieben.
+    Im Unterordner "Sicherungen" liegt je Arbeitstag eine Kopie (die letzten 30 Tage).
+  - Nach einem Neustart des Browsers fragt Chrome/Edge eventuell erneut nach der Erlaubnis: unten "Wieder verbinden"
+    klicken. Gehen Browser-Daten verloren, holt sich das Programm die Daten beim Öffnen aus dem Datenordner zurück.
+  - Firefox und Safari können keinen Datenordner verwenden. Dort regelmäßig "Sicherung herunterladen" (Einstellungen)
+    und die Datei aufbewahren; wiederherstellen mit "Sicherung laden ...".
+  Immer den Ordner mit sichern (z. B. Time Machine, Cloud-Ordner, USB-Stick).
+
+AUF EINEN ANDEREN COMPUTER ÜBERTRAGEN (Mac <-> Windows möglich)
+  Es genügt NICHT, nur Dienstplan.html zu kopieren: die Daten liegen im Datenordner bzw. im Browser-Speicher.
+  1. Den ganzen Datenordner (mit "Dienstplan-Daten.json") und Dienstplan.html auf den neuen Computer kopieren.
+  2. Am neuen Computer: Dienstplan.html öffnen > "Vorhandenen Datenordner öffnen ..." (Startbildschirm) bzw.
+     Einstellungen > "Datenordner wählen ..." > den kopierten Ordner auswählen. Die Daten werden geladen.
+  Ohne Datenordner geht es über "Sicherung herunterladen" am alten und "Sicherung laden ..." am neuen Computer.
+  Nicht gleichzeitig auf zwei Computern arbeiten. Weichen die Daten voneinander ab, fragt das Programm nach; die
+  jeweils ersetzte Fassung wird im Unterordner "Sicherungen" aufgehoben, es geht nichts verloren.
+
+ORDNER
+  Dienstplan.html   das Programm (nur diese Datei wird gebraucht)
+  src/, tools/      Quelltext und Prüfungen (nur für Weiterentwicklung)
+                    Neu erzeugen: node tools/build.mjs      Prüfen: node tools/test-logic.mjs
